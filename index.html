@@ -36,6 +36,7 @@
         .hw-item { text-align: center; }
         .hw-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
         .hw-value { font-size: 18px; font-weight: bold; }
+        .hw-timer { font-size: 12px; color: var(--text-muted); margin-top: 5px; font-family: monospace;}
         .hw-value.offline { color: var(--text-muted); }
         .hw-value.online { color: var(--success-green); }
 
@@ -76,7 +77,8 @@
     <div class="hardware-dashboard">
         <div class="hw-item">
             <div class="hw-title">Ground Station ESP32</div>
-            <div id="hw-esp-status" class="hw-value offline">Waiting for signal...</div>
+            <div id="hw-esp-status" class="hw-value offline">⚫ OFFLINE</div>
+            <div id="hw-esp-timer" class="hw-timer">Duration: 00:00</div>
         </div>
         <div class="hw-item">
             <div class="hw-title">Wi-Fi Signal</div>
@@ -122,16 +124,12 @@
         </div>
     </div>
 
-    <!-- MAIN LOGIC (Firebase V9 ES Modules & MQTT) -->
     <script type="module">
-        // Import Firebase V9
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-        // ==========================================
-        // 1. FIREBASE SETUP (Your specific keys)
-        // ==========================================
+        // Your exact Firebase keys
         const firebaseConfig = {
             apiKey: "AIzaSyBPer8sl3OlwTf6vdVwcyzBCNu9Re0--UM",
             authDomain: "satellitegroundstation-17f0d.firebaseapp.com",
@@ -148,7 +146,6 @@
         const cloudBadge = document.getElementById('cloud-badge');
         let totalRealPackets = 0;
 
-        // Login Anonymously to Firebase
         signInAnonymously(auth).then(() => {
             cloudBadge.textContent = "☁️ Cloud Sync Active";
             cloudBadge.className = "badge green";
@@ -159,9 +156,34 @@
             console.error("Firebase Auth Error:", error);
         });
 
-        // ==========================================
-        // 2. MQTT SETUP (HiveMQ)
-        // ==========================================
+        // Uptime / Downtime Timer Logic
+        let espCurrentState = 'OFFLINE';
+        let stateLastChangedTime = Date.now();
+        const timerDisplay = document.getElementById('hw-esp-timer');
+
+        // Update the timer every second
+        setInterval(() => {
+            const secondsElapsed = Math.floor((Date.now() - stateLastChangedTime) / 1000);
+            const m = Math.floor(secondsElapsed / 60);
+            const s = secondsElapsed % 60;
+            const timeFormatted = `${m}m ${s}s`;
+            
+            if (espCurrentState === 'ONLINE') {
+                timerDisplay.textContent = `Online for: ${timeFormatted}`;
+                timerDisplay.style.color = 'var(--success-green)';
+            } else {
+                timerDisplay.textContent = `Offline for: ${timeFormatted}`;
+                timerDisplay.style.color = 'var(--error-red)';
+            }
+        }, 1000);
+
+        function changeEspState(newState) {
+            if (espCurrentState !== newState) {
+                espCurrentState = newState;
+                stateLastChangedTime = Date.now(); // Reset timer
+            }
+        }
+
         const mqttClient = window.mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
         const mqttBadge = document.getElementById('mqtt-badge');
         
@@ -180,9 +202,6 @@
             mqttBadge.className = "badge red";
         });
 
-        // ==========================================
-        // 3. HARDWARE DASHBOARD LOGIC (Heartbeat)
-        // ==========================================
         let heartbeatTimeout;
 
         function renderWiFiBars(rssi) {
@@ -194,16 +213,16 @@
         }
 
         function handleStatusPing(data) {
-            // ESP32 is online!
-            document.getElementById('hw-esp-status').textContent = "🟢 ONLINE & LISTENING";
+            // ESP32 is online! Change timer state.
+            changeEspState('ONLINE');
+
+            document.getElementById('hw-esp-status').textContent = "🟢 CONNECTED & LISTENING";
             document.getElementById('hw-esp-status').className = "hw-value online";
 
-            // Update WiFi
             let rssi = data.wifi_rssi || -100;
             document.getElementById('hw-wifi-bars').textContent = renderWiFiBars(rssi) + ` [${rssi}dBm]`;
             document.getElementById('hw-wifi-bars').className = "hw-value online";
 
-            // Update LoRa Status
             if (data.lora_ok) {
                 document.getElementById('hw-lora-status').textContent = "✅ Initialized";
                 document.getElementById('hw-lora-status').className = "hw-value online";
@@ -212,10 +231,10 @@
                 document.getElementById('hw-lora-status').className = "hw-value offline";
             }
 
-            // Reset the 15-second "Dead" timer
             clearTimeout(heartbeatTimeout);
             heartbeatTimeout = setTimeout(() => {
-                document.getElementById('hw-esp-status').textContent = "⚫ OFFLINE (No Power)";
+                changeEspState('OFFLINE'); // ESP lost power or wifi
+                document.getElementById('hw-esp-status').textContent = "⚫ OFFLINE";
                 document.getElementById('hw-esp-status').className = "hw-value offline";
                 document.getElementById('hw-wifi-bars').textContent = "____ (No Data)";
                 document.getElementById('hw-wifi-bars').className = "hw-value offline";
@@ -224,14 +243,11 @@
             }, 15000);
         }
 
-        // ==========================================
-        // 4. DATA HANDLING & UI
-        // ==========================================
         function decodePacket(packetStr) {
             let satName = "Unknown CUBESAT";
             let meaning = "Raw Hex/Telemetry";
             if (packetStr.includes("FOSSASAT") || packetStr.startsWith("FOS")) {
-                satName = "FossaSat-1/2";
+                satName = "FossaSat";
                 meaning = "Fossa Telemetry: Battery & Temp log detected.";
             } else if (packetStr.startsWith("NORBY")) {
                 satName = "NORBY";
@@ -247,7 +263,6 @@
             
             if (isTest) row.classList.add('test-row');
 
-            // Format timestamp safely
             let dateStr = "Unknown Date";
             let timeStr = "";
             if (data.timestamp) {
@@ -282,25 +297,18 @@
             }
         }
 
-        // ==========================================
-        // 5. INCOMING MESSAGE ROUTER
-        // ==========================================
         mqttClient.on('message', async function (topic, message) {
             try {
                 const data = JSON.parse(message.toString());
 
                 if (topic === TOPIC_STATUS) {
-                    // It's a Heartbeat Ping!
                     handleStatusPing(data);
                 } 
                 else if (topic === TOPIC_DATA) {
-                    // It's Satellite Data!
                     if (data.isTest) {
-                        // Just show it on screen, DO NOT save to Firebase
                         data.timestamp = Date.now(); 
                         renderRow(data, true);
                     } else {
-                        // REAL SATELLITE PACKET: Save to Cloud
                         data.timestamp = Date.now();
                         await addDoc(collection(db, "satellite_packets"), data);
                         renderRow(data, false);
@@ -314,9 +322,6 @@
             }
         });
 
-        // ==========================================
-        // 6. SIMULATED TEST BUTTON
-        // ==========================================
         document.getElementById('test-btn').addEventListener('click', () => {
             const testPayload = {
                 packet: `FOSSA-TEST-BEACON-VOLT-4.2V-TEMP-${Math.floor(Math.random() * 20 + 10)}C`,
@@ -325,7 +330,6 @@
                 frequency: 436.7,
                 isTest: true 
             };
-            // Send the test packet through MQTT so the whole loop is tested
             mqttClient.publish(TOPIC_DATA, JSON.stringify(testPayload));
         });
 
