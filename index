@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satellite Telemetry Ground Station</title>
+    
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b1120;
+            --panel-bg: #1e293b;
+            --primary-blue: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
+        }
+
+        .header-container {
+            text-align: center;
+            border-bottom: 2px solid var(--panel-bg);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        h1 { color: var(--primary-blue); margin-bottom: 5px; letter-spacing: 1px; }
+
+        .status { 
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background-color: var(--panel-bg);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        
+        .status.connected { color: var(--success); border: 1px solid var(--success); }
+        .status.disconnected { color: var(--danger); border: 1px solid var(--danger); }
+        .status.database { color: #facc15; border: 1px solid #facc15; margin-left: 10px; }
+
+        .counter {
+            background-color: rgba(56, 189, 248, 0.1);
+            color: var(--primary-blue);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            display: inline-block;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .table-container {
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            margin-bottom: 40px;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 16px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th { background-color: rgba(0,0,0,0.2); color: var(--primary-blue); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em; }
+        tr:hover { background-color: rgba(255,255,255,0.02); }
+        .packet-raw { font-family: 'Courier New', Courier, monospace; color: #a3be8c; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px; }
+        .signal-good { color: var(--success); }
+        .signal-poor { color: #f59e0b; }
+
+        .footer { 
+            margin-top: auto; 
+            text-align: center; 
+            padding: 30px 20px; 
+            background-color: var(--panel-bg); 
+            border-radius: 12px;
+        }
+
+        .architect {
+            display: inline-block;
+            margin: 10px 20px;
+            padding: 15px 25px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        .architect strong { display: block; color: var(--primary-blue); font-size: 1.1rem; margin-bottom: 5px; }
+        .architect span { color: var(--text-muted); font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <h1>🛰️ Deep Space & Orbital Telemetry Hub</h1>
+        <p style="color: var(--text-muted); margin-top: 0;">LoRa 436.7 MHz Ground Station Interface</p>
+        
+        <div id="connection-status" class="status disconnected">Connecting to MQTT...</div>
+        <div id="db-status" class="status disconnected">Connecting to Cloud Database...</div>
+        <br>
+        
+        <div class="counter" id="packet-counter">Total Packets Received: <strong>0</strong></div>
+        <br>
+        
+        <button id="test-btn" style="background-color: var(--primary-blue); color: #000; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 10px;">🧪 Send Simulated Test Packet</button>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Identified Satellite</th>
+                    <th>Raw Telemetry Hex/String</th>
+                    <th>Decoded Subsystem Data</th>
+                    <th>RF Signal Stats</th>
+                </tr>
+            </thead>
+            <tbody id="data-table">
+                <!-- Injected via JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <h3 style="color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px;">System Architects & Ground Station Engineers</h3>
+        <div class="architect">
+            <strong>Mohamed Abbas Mohamed</strong>
+            <span>Specialized in Space Navigation</span>
+        </div>
+        <div class="architect">
+            <strong>Ibrahim Ahmed Youssef</strong>
+            <span>Specialized in Mechatronics</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- FIREBASE SETUP ---
+        let firebaseConfig;
+        
+        // This if-statement checks if you are running in the browser preview here, 
+        // or on your local C: drive.
+        if (typeof __firebase_config !== 'undefined') {
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else {
+            // *** REPLACE THESE VALUES WITH YOUR KEYS FROM STEP 4 ***
+            firebaseConfig = {
+                apiKey: "YOUR_API_KEY",
+                authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+                projectId: "YOUR_PROJECT_ID",
+                storageBucket: "YOUR_PROJECT_ID.appspot.com",
+                messagingSenderId: "YOUR_SENDER_ID",
+                appId: "YOUR_APP_ID"
+            };
+        }
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'satellite-station-01';
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // UI Elements
+        const dbStatusDiv = document.getElementById('db-status');
+        const mqttStatusDiv = document.getElementById('connection-status');
+        const tableBody = document.getElementById('data-table');
+        const packetCounter = document.getElementById('packet-counter');
+
+        // Arrays to separate permanent cloud data from temporary test data
+        let cloudPackets = [];
+        let sessionTestPackets = [];
+
+        function renderTable() {
+            // Combine both real and test packets for the UI
+            const allPackets = [...sessionTestPackets, ...cloudPackets];
+            
+            // Sort by newest first
+            allPackets.sort((a, b) => b.timestamp - a.timestamp);
+
+            // Update UI Counter (Only counting real cloud packets)
+            packetCounter.innerHTML = `Total Real Packets Received: <strong>${cloudPackets.length}</strong>`;
+            
+            // Clear and rebuild table
+            tableBody.innerHTML = '';
+            allPackets.forEach(data => {
+                const dateObj = new Date(data.timestamp);
+                const dateStr = dateObj.toLocaleDateString();
+                const timeStr = dateObj.toLocaleTimeString();
+                const decoded = decodePacket(data.packet);
+                const signalClass = data.snr > -5 ? "signal-good" : "signal-poor";
+
+                const row = document.createElement('tr');
+                
+                // Give test packets a slight red tint to easily identify them
+                if (data.isTest) {
+                    row.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
+                }
+
+                row.innerHTML = `
+                    <td><strong>${dateStr}</strong><br><span style="font-size: 0.9rem; color: #94a3b8;">${timeStr}</span></td>
+                    <td style="font-weight: 600; color: #38bdf8;">${decoded.satName} ${data.isTest ? '<span style="color: #ef4444; font-size: 0.8rem;">(TEST)</span>' : ''}</td>
+                    <td><span class="packet-raw">${data.packet || "EMPTY"}</span></td>
+                    <td>${decoded.meaning}</td>
+                    <td class="${signalClass}">RSSI: ${data.rssi} dBm <br> SNR: ${data.snr} dB</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        async function authenticateAndLoad() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                dbStatusDiv.innerHTML = '☁️ <strong>Cloud Sync Active</strong>';
+                dbStatusDiv.className = 'status connected';
+                
+                startDatabaseListener();
+            } catch (error) {
+                console.error("Firebase Authentication Error:", error);
+                dbStatusDiv.innerHTML = '⚠️ <strong>Cloud Auth Failed</strong> - Check Config';
+            }
+        }
+
+        function startDatabaseListener() {
+            // Guard rule: ensure user is authenticated before querying
+            if (!auth.currentUser) return; 
+
+            // Strict Path Rule enforced here
+            const packetsRef = collection(db, 'artifacts', appId, 'public', 'data', 'satellite_packets');
+
+            // Listen to database in real time
+            onSnapshot(packetsRef, (snapshot) => {
+                cloudPackets = [];
+                snapshot.forEach(doc => {
+                    cloudPackets.push(doc.data());
+                });
+
+                // Render the table with the new cloud data
+                renderTable();
+            }, (error) => {
+                console.error("Firebase Read Error:", error);
+            });
+        }
+
+        async function savePacketToCloud(packetData) {
+            if (!auth.currentUser) return;
+            
+            packetData.timestamp = Date.now();
+            const packetsRef = collection(db, 'artifacts', appId, 'public', 'data', 'satellite_packets');
+            
+            try {
+                await addDoc(packetsRef, packetData);
+                console.log("Packet permanently saved to Cloud!");
+            } catch(e) {
+                console.error("Error saving to Cloud:", e);
+            }
+        }
+
+        // Initialize Cloud Auth
+        authenticateAndLoad();
+
+        const mqttClient = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+        const mqttTopic = 'space_nav/satellite/data';
+
+        mqttClient.on('connect', function () {
+            mqttStatusDiv.innerHTML = '🟢 <strong>Broker Connected</strong> - Scanning Sky';
+            mqttStatusDiv.className = 'status connected';
+            mqttClient.subscribe(mqttTopic);
+        });
+
+        mqttClient.on('error', function (err) {
+            mqttStatusDiv.innerHTML = '🔴 <strong>Broker Disconnected</strong>';
+            mqttStatusDiv.className = 'status disconnected';
+        });
+
+        mqttClient.on('message', function (topic, message) {
+            try {
+                const data = JSON.parse(message.toString());
+                
+                // Block test data from entering Firebase
+                if (data.isTest || (typeof data.packet === 'string' && data.packet.includes("TEST"))) {
+                    console.log("Test packet ignored from permanent storage.");
+                    data.timestamp = Date.now(); // Add timestamp so it sorts correctly
+                    data.isTest = true;
+                    sessionTestPackets.push(data);
+                    renderTable(); // Update the UI to show the test, but don't save it
+                } else {
+                    // REAL SATELLITE DATA! Save permanently to Cloud!
+                    savePacketToCloud(data); 
+                }
+            } catch (e) {
+                console.error("Error parsing MQTT:", e);
+            }
+        });
+
+        function decodePacket(packetStr) {
+            let satName = "Unknown LEO / CubeSat";
+            let meaning = "Raw Hex / Encrypted Payload";
+            if(!packetStr) return { satName, meaning };
+            
+            const upperPacket = packetStr.toUpperCase();
+            if (upperPacket.includes("FOSSA")) {
+                satName = "FossaSat-1/2";
+                meaning = "Fossa Telemetry: Battery & Temp log detected.";
+            } else if (upperPacket.includes("VZL")) {
+                satName = "VZLUSAT-2";
+                meaning = "VZLUSAT Beacon: Attitude & Gyroscope data.";
+            }
+            return { satName, meaning };
+        }
+
+        // Connect the test button
+        document.getElementById('test-btn').addEventListener('click', () => {
+            if (mqttClient.connected) {
+                const testData = {
+                    packet: "FOSSA-TEST-BEACON-VOLT-4.2V-TEMP-" + Math.floor(Math.random() * 30) + "C",
+                    rssi: Math.floor(Math.random() * -40) - 50,
+                    snr: (Math.random() * 10).toFixed(1),
+                    frequency: 436.7,
+                    isTest: true // This flag tells the system NOT to save it to Firebase
+                };
+                // Publish to MQTT, which triggers the 'message' event!
+                mqttClient.publish(mqttTopic, JSON.stringify(testData));
+            } else {
+                console.warn("MQTT Not connected yet.");
+            }
+        });
+    </script>
+</body>
+</html>
