@@ -42,7 +42,7 @@
 
         /* Controls */
         .controls { text-align: center; margin-bottom: 20px; }
-        .counter-box { display: inline-block; padding: 10px 20px; border: 1px solid var(--accent-blue); background-color: rgba(77, 184, 255, 0.1); border-radius: 5px; font-size: 18px; color: var(--accent-blue); margin-bottom: 15px; }
+        .counter-box { display: inline-block; padding: 10px 20px; border: 1px solid var(--border-color); background-color: rgba(0,0,0,0.2); border-radius: 5px; font-size: 18px; color: var(--accent-blue); margin-bottom: 15px; }
         button { background-color: #17a2b8; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; transition: background 0.3s; font-weight: bold; }
         button:hover { background-color: #138496; }
 
@@ -90,11 +90,13 @@
         </div>
     </div>
 
+    <!-- CONTROLS & STATS -->
     <div class="controls">
         <div class="counter-box">Total Real Packets Received: <strong id="packet-count">0</strong></div><br>
         <button id="test-btn">🧪 Send Simulated Test Packet</button>
     </div>
 
+    <!-- DATA TABLE -->
     <table>
         <thead>
             <tr>
@@ -110,6 +112,7 @@
         </tbody>
     </table>
 
+    <!-- FOOTER CREDITS -->
     <div class="footer">
         <h3>System Architects & Ground Station Engineers</h3>
         <div class="engineers">
@@ -129,7 +132,7 @@
         import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-        // Your exact Firebase keys
+        // Firebase Setup using your exact keys
         const firebaseConfig = {
             apiKey: "AIzaSyBPer8sl3OlwTf6vdVwcyzBCNu9Re0--UM",
             authDomain: "satellitegroundstation-17f0d.firebaseapp.com",
@@ -143,42 +146,54 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        
         const cloudBadge = document.getElementById('cloud-badge');
         let totalRealPackets = 0;
 
+        // Login Anonymously and load history
         signInAnonymously(auth).then(() => {
             cloudBadge.textContent = "☁️ Cloud Sync Active";
             cloudBadge.className = "badge green";
             loadHistoricalData();
         }).catch((error) => {
-            cloudBadge.textContent = "⚠️ Cloud Auth Failed";
+            cloudBadge.textContent = "⚠️ Cloud Auth Failed - Check Config";
             cloudBadge.className = "badge red";
             console.error("Firebase Auth Error:", error);
         });
 
-        // Uptime / Downtime Timer Logic
-        let espCurrentState = 'OFFLINE';
-        let stateLastChangedTime = Date.now();
+        
+        // Load persistent memory from the browser's hard drive so refresh doesn't break it!
+        let espCurrentState = localStorage.getItem('hw_state') || 'OFFLINE';
+        let stateLastChangedTime = parseInt(localStorage.getItem('hw_time')) || Date.now();
+        let espUptimeSeconds = parseInt(localStorage.getItem('hw_uptime')) || 0;
+        let lastPingTime = parseInt(localStorage.getItem('hw_lastping')) || Date.now();
+
         const timerDisplay = document.getElementById('hw-esp-timer');
 
-        let espUptimeSeconds = 0;
-        let lastPingTime = 0;
-
-        // Update the timer every second
+        // Master Timer Loop (Runs every second)
         setInterval(() => {
+            const elapsedSincePing = Math.floor((Date.now() - lastPingTime) / 1000);
+
             if (espCurrentState === 'ONLINE') {
-                // If online, use the uptime from the ESP32 itself (incremented by our JS clock)
-                const elapsedSincePing = Math.floor((Date.now() - lastPingTime) / 1000);
+                // Failsafe: If we refreshed the page, but the ESP32 is actually offline/dead, 
+                // the ping will have timed out. We mathematically backdate the failure.
+                if (elapsedSincePing > 15) {
+                    // It died 15 seconds after the last ping we received!
+                    changeEspState('OFFLINE', lastPingTime + 15000);
+                    return; 
+                }
+
+                // If it's truly online, calculate uptime
                 const currentUptime = espUptimeSeconds + elapsedSincePing;
-                
                 const h = Math.floor(currentUptime / 3600);
                 const m = Math.floor((currentUptime % 3600) / 60);
                 const s = currentUptime % 60;
                 
                 timerDisplay.textContent = `Online for: ${h}h ${m}m ${s}s`;
                 timerDisplay.style.color = 'var(--success-green)';
+            
             } else {
-                // If offline, measure time since the disconnect occurred
+                // If it's offline, calculate downtime based on the saved historical timestamp
                 const secondsOffline = Math.floor((Date.now() - stateLastChangedTime) / 1000);
                 const h = Math.floor(secondsOffline / 3600);
                 const m = Math.floor((secondsOffline % 3600) / 60);
@@ -189,13 +204,30 @@
             }
         }, 1000);
 
-        function changeEspState(newState) {
+        // State Change Handler with Persistent Saving
+        function changeEspState(newState, backdatedTime = null) {
             if (espCurrentState !== newState) {
                 espCurrentState = newState;
-                stateLastChangedTime = Date.now(); // Reset timer
+                stateLastChangedTime = backdatedTime ? backdatedTime : Date.now();
+                
+                // Save to hard drive permanently
+                localStorage.setItem('hw_state', espCurrentState);
+                localStorage.setItem('hw_time', stateLastChangedTime);
+
+                // Update UI visually if offline
+                if (newState === 'OFFLINE') {
+                    document.getElementById('hw-esp-status').textContent = "⚫ OFFLINE";
+                    document.getElementById('hw-esp-status').className = "hw-value offline";
+                    document.getElementById('hw-wifi-bars').textContent = "____ (No Data)";
+                    document.getElementById('hw-wifi-bars').className = "hw-value offline";
+                    document.getElementById('hw-lora-status').textContent = "Unknown";
+                    document.getElementById('hw-lora-status').className = "hw-value offline";
+                }
             }
         }
 
+
+        // Connect to HiveMQ Public Broker via WebSockets
         const mqttClient = window.mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
         const mqttBadge = document.getElementById('mqtt-badge');
         
@@ -214,8 +246,6 @@
             mqttBadge.className = "badge red";
         });
 
-        let heartbeatTimeout;
-
         function renderWiFiBars(rssi) {
             if (rssi > -60) return "▂▃▅▆ (Excellent)";
             if (rssi > -70) return "▂▃▅_ (Good)";
@@ -225,11 +255,15 @@
         }
 
         function handleStatusPing(data) {
-            // ESP32 is online! Change timer state.
             changeEspState('ONLINE');
             
+            // Sync ESP32's internal memory clock
             espUptimeSeconds = data.uptime_s || 0;
             lastPingTime = Date.now();
+
+            // Save to browser hard drive
+            localStorage.setItem('hw_uptime', espUptimeSeconds);
+            localStorage.setItem('hw_lastping', lastPingTime);
 
             document.getElementById('hw-esp-status').textContent = "🟢 CONNECTED & LISTENING";
             document.getElementById('hw-esp-status').className = "hw-value online";
@@ -245,18 +279,8 @@
                 document.getElementById('hw-lora-status').textContent = "❌ Failed / Error";
                 document.getElementById('hw-lora-status').className = "hw-value offline";
             }
-
-            clearTimeout(heartbeatTimeout);
-            heartbeatTimeout = setTimeout(() => {
-                changeEspState('OFFLINE'); // ESP lost power or wifi
-                document.getElementById('hw-esp-status').textContent = "⚫ OFFLINE";
-                document.getElementById('hw-esp-status').className = "hw-value offline";
-                document.getElementById('hw-wifi-bars').textContent = "____ (No Data)";
-                document.getElementById('hw-wifi-bars').className = "hw-value offline";
-                document.getElementById('hw-lora-status').textContent = "Unknown";
-                document.getElementById('hw-lora-status').className = "hw-value offline";
-            }, 15000);
         }
+
 
         function decodePacket(packetStr) {
             let satName = "Unknown CUBESAT";
@@ -293,7 +317,7 @@
                 <td style="color:var(--text-muted)">${decoded.meaning}</td>
                 <td><span style="color:var(--success-green)">RSSI: ${data.rssi} dBm</span><br><span style="color:var(--success-green)">SNR: ${data.snr} dB</span></td>
             `;
-            tableBody.insertBefore(row, tableBody.firstChild);
+            tableBody.insertBefore(row, tableBody.firstChild); // Put newest data at top
         }
 
         async function loadHistoricalData() {
@@ -312,6 +336,7 @@
             }
         }
 
+        // Handle incoming data
         mqttClient.on('message', async function (topic, message) {
             try {
                 const data = JSON.parse(message.toString());
@@ -325,6 +350,7 @@
                         renderRow(data, true);
                     } else {
                         data.timestamp = Date.now();
+                        // Save Real data directly to Firebase
                         await addDoc(collection(db, "satellite_packets"), data);
                         renderRow(data, false);
                         
@@ -337,6 +363,7 @@
             }
         });
 
+        // Test Button logic
         document.getElementById('test-btn').addEventListener('click', () => {
             const testPayload = {
                 packet: `FOSSA-TEST-BEACON-VOLT-4.2V-TEMP-${Math.floor(Math.random() * 20 + 10)}C`,
