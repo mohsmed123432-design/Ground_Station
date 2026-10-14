@@ -36,7 +36,7 @@
         .hw-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
         .hw-value { font-size: 18px; font-weight: bold; }
         .hw-timer { font-size: 12px; color: var(--text-muted); margin-top: 5px; font-family: monospace;}
-        .hw-value.offline { color: var(--error-red); }
+        .hw-value.offline { color: var(--text-muted); }
         .hw-value.online { color: var(--success-green); }
         .hw-value.rf-noise { color: #a3be8c; }
 
@@ -50,12 +50,14 @@
         th { background-color: #1e293b; color: var(--accent-blue); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
         tr:hover { background-color: #1e293b; }
         .packet-raw { font-family: monospace; color: #a3be8c; background: #232c3b; padding: 4px 8px; border-radius: 4px; }
-        
+        .test-row { border-left: 4px solid var(--error-red); background-color: rgba(220, 53, 69, 0.05); }
+
         .footer { margin-top: auto; padding: 20px; background-color: var(--panel-bg); border-top: 1px solid var(--border-color); border-radius: 8px; }
         .footer h3 { text-align: center; color: var(--text-muted); letter-spacing: 2px; font-size: 14px; text-transform: uppercase; margin-top: 0; }
         .engineers { display: flex; justify-content: center; gap: 40px; text-align: center; }
         .engineer-card { border-left: 3px solid var(--accent-blue); padding-left: 15px; text-align: left; }
         .engineer-card strong { color: var(--accent-blue); font-size: 18px; display: block; }
+        .engineer-card span { color: var(--text-muted); font-size: 14px; }
     </style>
 </head>
 <body>
@@ -73,7 +75,7 @@
         <div class="hw-item">
             <div class="hw-title">Ground Station ESP32</div>
             <div id="hw-esp-status" class="hw-value offline">⚫ OFFLINE</div>
-            <div id="hw-esp-timer" class="hw-timer">Offline for: 00:00:00</div>
+            <div id="hw-esp-timer" class="hw-timer">Duration: 00:00:00</div>
         </div>
         <div class="hw-item">
             <div class="hw-title">Wi-Fi Signal</div>
@@ -85,7 +87,7 @@
         </div>
         <div class="hw-item">
             <div class="hw-title">Live RF Noise Floor</div>
-            <div id="hw-bg-rssi" class="hw-value offline">Waiting...</div>
+            <div id="hw-bg-rssi" class="hw-value offline">Waiting for ESP32...</div>
         </div>
     </div>
 
@@ -111,11 +113,18 @@
         </tbody>
     </table>
 
+    <!-- FOOTER CREDITS -->
     <div class="footer">
         <h3>System Architects & Ground Station Engineers</h3>
         <div class="engineers">
-            <div class="engineer-card"><strong>Mohamed Abbas Mohamed</strong><br><span style="color:var(--text-muted)">Space Navigation</span></div>
-            <div class="engineer-card"><strong>Ibrahim Ahmed Youssef</strong><br><span style="color:var(--text-muted)">Mechatronics</span></div>
+            <div class="engineer-card">
+                <strong>Mohamed Abbas Mohamed</strong>
+                <span>Specialized in Space Navigation</span>
+            </div>
+            <div class="engineer-card">
+                <strong>Ibrahim Ahmed Youssef</strong>
+                <span>Specialized in Mechatronics</span>
+            </div>
         </div>
     </div>
 
@@ -124,6 +133,7 @@
         import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
+        // Your Exact Firebase Setup
         const firebaseConfig = {
             apiKey: "AIzaSyBPer8sl3OlwTf6vdVwcyzBCNu9Re0--UM",
             authDomain: "satellitegroundstation-17f0d.firebaseapp.com",
@@ -137,6 +147,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        
         const cloudBadge = document.getElementById('cloud-badge');
         let totalRealPackets = 0;
 
@@ -144,39 +155,102 @@
             cloudBadge.textContent = "☁️ Cloud Sync Active";
             cloudBadge.className = "badge green";
             loadHistoricalData();
-        }).catch(error => {
-            cloudBadge.textContent = "⚠️ Cloud Auth Failed";
+        }).catch((error) => {
+            cloudBadge.textContent = "⚠️ Cloud Auth Failed - Check Config";
             cloudBadge.className = "badge red";
+            console.error("Firebase Auth Error:", error);
         });
 
-        // HARDWARE TIMER LOGIC
-        let isOnline = false;
-        let lastPingTime = 0;
-        let espUptimeSeconds = 0;
-        let offlineTimestamp = parseInt(localStorage.getItem('hw_offline_time')) || Date.now();
+        // --- BULLETPROOF HARDWARE TIMER LOGIC ---
+        // Load the exact saved state from the browser's hard drive
+        let espCurrentState = localStorage.getItem('hw_state') || 'OFFLINE';
+        let lastPingTime = parseInt(localStorage.getItem('hw_lastping')) || Date.now();
+        let espUptimeSeconds = parseInt(localStorage.getItem('hw_uptime')) || 0;
+        let offlineSince = parseInt(localStorage.getItem('hw_offline_since')) || Date.now();
 
-        function updateTimerDisplay() {
-            const timerDisplay = document.getElementById('hw-esp-timer');
+        const timerDisplay = document.getElementById('hw-esp-timer');
+
+        // Master Timer Loop - Runs every second
+        setInterval(() => {
+            const now = Date.now();
+            // Calculate how many seconds have passed since the ESP32 last sent a heartbeat
+            const timeSinceLastPing = Math.floor((now - lastPingTime) / 1000);
+
+            if (espCurrentState === 'ONLINE') {
+                if (timeSinceLastPing > 15) {
+                    // It died! We missed 3 pings.
+                    espCurrentState = 'OFFLINE';
+                    // It likely died exactly 15 seconds after we heard from it last
+                    offlineSince = lastPingTime + 15000; 
+                    
+                    // Save this realization to the hard drive immediately!
+                    localStorage.setItem('hw_state', espCurrentState);
+                    localStorage.setItem('hw_offline_since', offlineSince);
+                    updateHardwareUIDisconnected();
+                } else {
+                    // It's alive! Calculate exact uptime.
+                    let currentUptime = espUptimeSeconds + timeSinceLastPing;
+                    displayTimer(currentUptime, true);
+                }
+            } else {
+                // It's OFFLINE. Calculate how long it has been dead.
+                let currentDowntime = Math.floor((now - offlineSince) / 1000);
+                if (currentDowntime < 0) currentDowntime = 0; // Prevent negative time
+                displayTimer(currentDowntime, false);
+                
+                // Keep UI grey if page was just refreshed
+                updateHardwareUIDisconnected(); 
+            }
+        }, 1000);
+
+        function displayTimer(totalSeconds, isOnline) {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            const s = totalSeconds % 60;
             
+            // Format numbers to have leading zeros (e.g. 05m 09s)
+            const hh = h.toString().padStart(2, '0');
+            const mm = m.toString().padStart(2, '0');
+            const ss = s.toString().padStart(2, '0');
+
             if (isOnline) {
-                // Calculate time since the ESP32 booted up
-                let timeSinceBoot = espUptimeSeconds + Math.floor((Date.now() - lastPingTime) / 1000);
-                let h = Math.floor(timeSinceBoot / 3600);
-                let m = Math.floor((timeSinceBoot % 3600) / 60);
-                let s = timeSinceBoot % 60;
-                timerDisplay.textContent = `Online for: ${h}h ${m}m ${s}s`;
+                timerDisplay.textContent = `Online for: ${hh}h ${mm}m ${ss}s`;
                 timerDisplay.style.color = 'var(--success-green)';
             } else {
-                // Calculate time since it was last seen alive
-                let offlineSeconds = Math.floor((Date.now() - offlineTimestamp) / 1000);
-                let h = Math.floor(offlineSeconds / 3600);
-                let m = Math.floor((offlineSeconds % 3600) / 60);
-                let s = offlineSeconds % 60;
-                timerDisplay.textContent = `Offline for: ${h}h ${m}m ${s}s`;
+                timerDisplay.textContent = `Offline for: ${hh}h ${mm}m ${ss}s`;
                 timerDisplay.style.color = 'var(--error-red)';
             }
         }
-        setInterval(updateTimerDisplay, 1000);
+
+        function updateHardwareUIDisconnected() {
+            document.getElementById('hw-esp-status').textContent = "⚫ OFFLINE";
+            document.getElementById('hw-esp-status').className = "hw-value offline";
+            document.getElementById('hw-wifi-bars').textContent = "____ (No Data)";
+            document.getElementById('hw-wifi-bars').className = "hw-value offline";
+            document.getElementById('hw-lora-status').textContent = "Unknown";
+            document.getElementById('hw-lora-status').className = "hw-value offline";
+            document.getElementById('hw-bg-rssi').textContent = "Waiting for ESP32...";
+            document.getElementById('hw-bg-rssi').className = "hw-value offline";
+        }
+
+        // MQTT Connection
+        const mqttClient = window.mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+        const mqttBadge = document.getElementById('mqtt-badge');
+        
+        const TOPIC_DATA = 'space_nav/satellite/data';
+        const TOPIC_STATUS = 'space_nav/satellite/status';
+
+        mqttClient.on('connect', function () {
+            mqttBadge.textContent = "🟢 Broker Connected - Scanning Sky";
+            mqttBadge.className = "badge green";
+            mqttClient.subscribe(TOPIC_DATA);
+            mqttClient.subscribe(TOPIC_STATUS);
+        });
+
+        mqttClient.on('error', function (err) {
+            mqttBadge.textContent = "🔴 Broker Disconnected";
+            mqttBadge.className = "badge red";
+        });
 
         function renderWiFiBars(rssi) {
             if (rssi > -60) return "▂▃▅▆ (Excellent)";
@@ -186,80 +260,50 @@
             return "____ (Bad)";
         }
 
-        const mqttClient = window.mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
-        const TOPIC_DATA = 'space_nav/satellite/data';
-        const TOPIC_STATUS = 'space_nav/satellite/status';
+        function handleStatusPing(data) {
+            // We received a ping! Update all our robust variables.
+            espCurrentState = 'ONLINE';
+            lastPingTime = Date.now();
+            espUptimeSeconds = data.uptime_s || 0; // Read exact uptime from ESP32 brain
 
-        mqttClient.on('connect', () => {
-            document.getElementById('mqtt-badge').textContent = "🟢 Broker Connected";
-            document.getElementById('mqtt-badge').className = "badge green";
-            mqttClient.subscribe(TOPIC_DATA);
-            mqttClient.subscribe(TOPIC_STATUS);
-        });
+            // Save immediately to hard drive in case user refreshes page!
+            localStorage.setItem('hw_state', espCurrentState);
+            localStorage.setItem('hw_lastping', lastPingTime);
+            localStorage.setItem('hw_uptime', espUptimeSeconds);
 
-        // Offline Watchdog
-        setInterval(() => {
-            if (isOnline && (Date.now() - lastPingTime > 15000)) {
-                isOnline = false;
-                offlineTimestamp = Date.now();
-                localStorage.setItem('hw_offline_time', offlineTimestamp);
-                document.getElementById('hw-esp-status').textContent = "⚫ OFFLINE";
-                document.getElementById('hw-esp-status').className = "hw-value offline";
-                document.getElementById('hw-wifi-bars').textContent = "____ (No Data)";
-                document.getElementById('hw-wifi-bars').className = "hw-value offline";
-                document.getElementById('hw-lora-status').textContent = "Unknown";
+            // Update the UI Colors
+            document.getElementById('hw-esp-status').textContent = "🟢 CONNECTED & LISTENING";
+            document.getElementById('hw-esp-status').className = "hw-value online";
+
+            let rssi = data.wifi_rssi || -100;
+            document.getElementById('hw-wifi-bars').textContent = renderWiFiBars(rssi) + ` [${rssi}dBm]`;
+            document.getElementById('hw-wifi-bars').className = "hw-value online";
+
+            if (data.lora_ok) {
+                document.getElementById('hw-lora-status').textContent = "✅ Initialized";
+                document.getElementById('hw-lora-status').className = "hw-value online";
+            } else {
+                document.getElementById('hw-lora-status').textContent = "❌ Failed / Error";
                 document.getElementById('hw-lora-status').className = "hw-value offline";
-                document.getElementById('hw-bg-rssi').textContent = "Waiting...";
-                document.getElementById('hw-bg-rssi').className = "hw-value offline";
             }
-        }, 1000);
 
-        mqttClient.on('message', async (topic, message) => {
-            try {
-                const data = JSON.parse(message.toString());
-
-                if (topic === TOPIC_STATUS) {
-                    isOnline = true;
-                    lastPingTime = Date.now();
-                    espUptimeSeconds = data.uptime_s || 0;
-                    
-                    document.getElementById('hw-esp-status').textContent = "🟢 CONNECTED & LISTENING";
-                    document.getElementById('hw-esp-status').className = "hw-value online";
-                    
-                    document.getElementById('hw-wifi-bars').textContent = renderWiFiBars(data.wifi_rssi) + ` [${data.wifi_rssi}dBm]`;
-                    document.getElementById('hw-wifi-bars').className = "hw-value online";
-                    
-                    if (data.lora_ok) {
-                        document.getElementById('hw-lora-status').textContent = "✅ Initialized";
-                        document.getElementById('hw-lora-status').className = "hw-value online";
-                    } else {
-                        document.getElementById('hw-lora-status').textContent = "❌ Failed / Error";
-                        document.getElementById('hw-lora-status').className = "hw-value offline";
-                    }
-
-                    if (data.bg_rssi !== undefined) {
-                        document.getElementById('hw-bg-rssi').textContent = `${data.bg_rssi.toFixed(1)} dBm`;
-                        document.getElementById('hw-bg-rssi').className = "hw-value rf-noise";
-                    }
-                } 
-                else if (topic === TOPIC_DATA) {
-                    data.timestamp = Date.now();
-                    if (!data.isTest) {
-                        await addDoc(collection(db, "satellite_packets"), data);
-                        totalRealPackets++;
-                        document.getElementById('packet-count').textContent = totalRealPackets;
-                    }
-                    renderRow(data, data.isTest);
-                }
-            } catch (e) {
-                console.error("MQTT Error:", e);
+            // Display Live Background RF Noise Scanner Data
+            if (data.bg_rssi !== undefined) {
+                document.getElementById('hw-bg-rssi').textContent = `${data.bg_rssi.toFixed(1)} dBm`;
+                document.getElementById('hw-bg-rssi').className = "hw-value rf-noise";
             }
-        });
+        }
 
         function decodePacket(packetStr) {
-            let satName = "Unknown CUBESAT", meaning = "Raw Hex/Telemetry";
-            if (packetStr.includes("FOSSA") || packetStr.startsWith("FOS")) { satName = "FossaSat"; meaning = "Telemetry Log Detected."; }
-            else if (packetStr.startsWith("NORBY")) { satName = "NORBY"; meaning = "NORBY Beacon."; }
+            let satName = "Unknown CUBESAT";
+            let meaning = "Raw Hex/Telemetry";
+            if (packetStr.includes("FOSSASAT") || packetStr.startsWith("FOS")) {
+                satName = "FossaSat";
+                meaning = "Fossa Telemetry: Battery & Temp log detected.";
+            } else if (packetStr.startsWith("NORBY")) {
+                satName = "NORBY";
+                meaning = "NORBY Beacon: Health status packet.";
+            }
             return { satName, meaning };
         }
 
@@ -268,10 +312,19 @@
             const decoded = decodePacket(data.packet);
             const row = document.createElement('tr');
             
-            let dateObj = new Date(data.timestamp);
+            if (isTest) row.classList.add('test-row');
+
+            let dateStr = "Unknown Date";
+            let timeStr = "";
+            if (data.timestamp) {
+                const dateObj = new Date(data.timestamp);
+                dateStr = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                timeStr = dateObj.toLocaleTimeString();
+            }
+
             row.innerHTML = `
-                <td><strong>${dateObj.toLocaleDateString()}</strong><br><small style="color:var(--text-muted)">${dateObj.toLocaleTimeString()}</small></td>
-                <td style="color:var(--accent-blue); font-weight:bold;">${decoded.satName} ${isTest ? '<br><small style="color:var(--error-red)">(SIM)</small>' : ''}</td>
+                <td><strong>${dateStr}</strong><br><small style="color:var(--text-muted)">${timeStr}</small></td>
+                <td style="color:var(--accent-blue); font-weight:bold;">${decoded.satName} ${isTest ? '<br><small style="color:var(--error-red)">(SIMULATED)</small>' : ''}</td>
                 <td><span class="packet-raw">${data.packet}</span></td>
                 <td style="color:var(--text-muted)">${decoded.meaning}</td>
                 <td><span style="color:var(--success-green)">RSSI: ${data.rssi} dBm</span><br><span style="color:var(--success-green)">SNR: ${data.snr} dB</span></td>
@@ -280,17 +333,58 @@
         }
 
         async function loadHistoricalData() {
-            const q = query(collection(db, "satellite_packets"), orderBy("timestamp", "asc"));
-            const querySnapshot = await getDocs(q);
-            querySnapshot.forEach(doc => { renderRow(doc.data(), false); totalRealPackets++; });
-            document.getElementById('packet-count').textContent = totalRealPackets;
+            try {
+                const q = query(collection(db, "satellite_packets"), orderBy("timestamp", "asc"));
+                const querySnapshot = await getDocs(q);
+                totalRealPackets = 0;
+                
+                querySnapshot.forEach((doc) => {
+                    renderRow(doc.data(), false);
+                    totalRealPackets++;
+                });
+                document.getElementById('packet-count').textContent = totalRealPackets;
+            } catch (e) {
+                console.error("Error loading historical data:", e);
+            }
         }
 
-        document.getElementById('test-btn').addEventListener('click', () => {
-            mqttClient.publish(TOPIC_DATA, JSON.stringify({
-                packet: `FOSSA-TEST-BEACON-${Math.floor(Math.random()*100)}`, rssi: -65, snr: 7.2, isTest: true 
-            }));
+        mqttClient.on('message', async function (topic, message) {
+            try {
+                const data = JSON.parse(message.toString());
+
+                if (topic === TOPIC_STATUS) {
+                    handleStatusPing(data);
+                } 
+                else if (topic === TOPIC_DATA) {
+                    if (data.isTest) {
+                        data.timestamp = Date.now(); 
+                        renderRow(data, true);
+                    } else {
+                        data.timestamp = Date.now();
+                        await addDoc(collection(db, "satellite_packets"), data);
+                        renderRow(data, false);
+                        
+                        totalRealPackets++;
+                        document.getElementById('packet-count').textContent = totalRealPackets;
+                    }
+                }
+            } catch (e) {
+                console.error("Message Processing Error: ", e);
+            }
         });
+
+        // Interactive Button for Testing UI Design
+        document.getElementById('test-btn').addEventListener('click', () => {
+            const testPayload = {
+                packet: `FOSSA-TEST-BEACON-VOLT-4.2V-TEMP-${Math.floor(Math.random() * 20 + 10)}C`,
+                rssi: -50 - Math.floor(Math.random() * 20),
+                snr: 8.5 + (Math.random() * 2),
+                frequency: 436.7,
+                isTest: true 
+            };
+            mqttClient.publish(TOPIC_DATA, JSON.stringify(testPayload));
+        });
+
     </script>
 </body>
 </html>
