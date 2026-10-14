@@ -161,18 +161,30 @@
         let stateLastChangedTime = Date.now();
         const timerDisplay = document.getElementById('hw-esp-timer');
 
+        let espUptimeSeconds = 0;
+        let lastPingTime = 0;
+
         // Update the timer every second
         setInterval(() => {
-            const secondsElapsed = Math.floor((Date.now() - stateLastChangedTime) / 1000);
-            const m = Math.floor(secondsElapsed / 60);
-            const s = secondsElapsed % 60;
-            const timeFormatted = `${m}m ${s}s`;
-            
             if (espCurrentState === 'ONLINE') {
-                timerDisplay.textContent = `Online for: ${timeFormatted}`;
+                // If online, use the uptime from the ESP32 itself (incremented by our JS clock)
+                const elapsedSincePing = Math.floor((Date.now() - lastPingTime) / 1000);
+                const currentUptime = espUptimeSeconds + elapsedSincePing;
+                
+                const h = Math.floor(currentUptime / 3600);
+                const m = Math.floor((currentUptime % 3600) / 60);
+                const s = currentUptime % 60;
+                
+                timerDisplay.textContent = `Online for: ${h}h ${m}m ${s}s`;
                 timerDisplay.style.color = 'var(--success-green)';
             } else {
-                timerDisplay.textContent = `Offline for: ${timeFormatted}`;
+                // If offline, measure time since the disconnect occurred
+                const secondsOffline = Math.floor((Date.now() - stateLastChangedTime) / 1000);
+                const h = Math.floor(secondsOffline / 3600);
+                const m = Math.floor((secondsOffline % 3600) / 60);
+                const s = secondsOffline % 60;
+                
+                timerDisplay.textContent = `Offline for: ${h}h ${m}m ${s}s`;
                 timerDisplay.style.color = 'var(--error-red)';
             }
         }, 1000);
@@ -215,6 +227,9 @@
         function handleStatusPing(data) {
             // ESP32 is online! Change timer state.
             changeEspState('ONLINE');
+            
+            espUptimeSeconds = data.uptime_s || 0;
+            lastPingTime = Date.now();
 
             document.getElementById('hw-esp-status').textContent = "🟢 CONNECTED & LISTENING";
             document.getElementById('hw-esp-status').className = "hw-value online";
