@@ -150,25 +150,15 @@
         import { getFirestore, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- FIREBASE SETUP ---
-        let firebaseConfig;
-        
-        // This if-statement checks if you are running in the browser preview here, 
-        // or on your local C: drive.
-        if (typeof __firebase_config !== 'undefined') {
-            firebaseConfig = JSON.parse(__firebase_config);
-        } else {
-            // *** REPLACE THESE VALUES WITH YOUR KEYS FROM STEP 4 ***
-            firebaseConfig = {
-                apiKey: "YOUR_API_KEY",
-                authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-                projectId: "YOUR_PROJECT_ID",
-                storageBucket: "YOUR_PROJECT_ID.appspot.com",
-                messagingSenderId: "YOUR_SENDER_ID",
-                appId: "YOUR_APP_ID"
-            };
-        }
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'satellite-station-01';
+        const firebaseConfig = {
+            apiKey: "AIzaSyBPer8sl3OlwTf6vdVwcyzBCNu9Re0--UM",
+            authDomain: "satellitegroundstation-17f0d.firebaseapp.com",
+            projectId: "satellitegroundstation-17f0d",
+            storageBucket: "satellitegroundstation-17f0d.firebasestorage.app",
+            messagingSenderId: "441533654624",
+            appId: "1:441533654624:web:b9be9ec8c8d67aefc04505",
+            measurementId: "G-P5P6Z9S4KB"
+        };
         
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -224,15 +214,9 @@
 
         async function authenticateAndLoad() {
             try {
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                
+                await signInAnonymously(auth);
                 dbStatusDiv.innerHTML = '☁️ <strong>Cloud Sync Active</strong>';
                 dbStatusDiv.className = 'status connected';
-                
                 startDatabaseListener();
             } catch (error) {
                 console.error("Firebase Authentication Error:", error);
@@ -241,11 +225,9 @@
         }
 
         function startDatabaseListener() {
-            // Guard rule: ensure user is authenticated before querying
             if (!auth.currentUser) return; 
 
-            // Strict Path Rule enforced here
-            const packetsRef = collection(db, 'artifacts', appId, 'public', 'data', 'satellite_packets');
+            const packetsRef = collection(db, 'satellite_packets');
 
             // Listen to database in real time
             onSnapshot(packetsRef, (snapshot) => {
@@ -253,8 +235,6 @@
                 snapshot.forEach(doc => {
                     cloudPackets.push(doc.data());
                 });
-
-                // Render the table with the new cloud data
                 renderTable();
             }, (error) => {
                 console.error("Firebase Read Error:", error);
@@ -265,7 +245,7 @@
             if (!auth.currentUser) return;
             
             packetData.timestamp = Date.now();
-            const packetsRef = collection(db, 'artifacts', appId, 'public', 'data', 'satellite_packets');
+            const packetsRef = collection(db, 'satellite_packets');
             
             try {
                 await addDoc(packetsRef, packetData);
@@ -299,10 +279,10 @@
                 // Block test data from entering Firebase
                 if (data.isTest || (typeof data.packet === 'string' && data.packet.includes("TEST"))) {
                     console.log("Test packet ignored from permanent storage.");
-                    data.timestamp = Date.now(); // Add timestamp so it sorts correctly
+                    data.timestamp = Date.now(); 
                     data.isTest = true;
                     sessionTestPackets.push(data);
-                    renderTable(); // Update the UI to show the test, but don't save it
+                    renderTable(); 
                 } else {
                     // REAL SATELLITE DATA! Save permanently to Cloud!
                     savePacketToCloud(data); 
@@ -336,9 +316,8 @@
                     rssi: Math.floor(Math.random() * -40) - 50,
                     snr: (Math.random() * 10).toFixed(1),
                     frequency: 436.7,
-                    isTest: true // This flag tells the system NOT to save it to Firebase
+                    isTest: true 
                 };
-                // Publish to MQTT, which triggers the 'message' event!
                 mqttClient.publish(mqttTopic, JSON.stringify(testData));
             } else {
                 console.warn("MQTT Not connected yet.");
