@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Satellite Telemetry Ground Station</title>
+    <title>Deep Space & Orbital Telemetry Hub</title>
     
-    <!-- Load MQTT.js globally -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
     <style>
@@ -20,20 +19,18 @@
             --text-main: #e0e6ed;
             --text-muted: #8a99a8;
             --accent-purple: #b48ead;
-            --btn-slate: #64748b;
+            --pause-grey: #6c757d;
         }
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; display: flex; flex-direction: column; min-height: 100vh; }
         h1 { text-align: center; color: var(--accent-blue); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-top: 0; }
         
-        /* Connection Badges */
         .status-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
         .badge { padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; border: 1px solid var(--border-color); background-color: rgba(0,0,0,0.2); }
         .badge.green { color: var(--success-green); border-color: var(--success-green); }
         .badge.red { color: var(--error-red); border-color: var(--error-red); }
         .badge.yellow { color: var(--warning-yellow); border-color: var(--warning-yellow); }
 
-        /* Hardware Dashboard */
         .hardware-dashboard { display: flex; justify-content: space-around; background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .hw-item { text-align: center; flex: 1; border-right: 1px solid var(--border-color); padding: 0 10px;}
         .hw-item:last-child { border-right: none; }
@@ -48,22 +45,22 @@
 
         .freq-highlight { color: var(--accent-blue); font-size: 22px; font-weight: 900; background: rgba(77, 184, 255, 0.1); padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 4px;}
 
-        /* Controls */
         .controls { text-align: center; margin-bottom: 20px; }
         .counter-box { display: inline-block; padding: 10px 20px; border: 1px solid var(--border-color); background-color: rgba(0,0,0,0.2); border-radius: 5px; font-size: 18px; color: var(--accent-blue); margin-bottom: 15px; }
         button { background-color: #17a2b8; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; transition: background 0.3s; font-weight: bold; }
         button:hover { background-color: #138496; }
 
-        /* Satellite Command Form Styles */
         .c2-panel { background-color: #1e293b; border: 1px solid var(--accent-purple); border-radius: 8px; padding: 20px; margin-bottom: 20px; text-align: left; }
         .c2-panel h3 { color: var(--accent-purple); margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
         .input-group { display: inline-block; margin-right: 15px; margin-bottom: 10px; }
         .input-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
         .input-group input { background: #0b0e14; border: 1px solid var(--border-color); color: white; padding: 8px; border-radius: 4px; width: 120px; }
+        
         .btn-beam { background-color: var(--accent-purple); margin-top: 15px;}
         .btn-beam:hover { background-color: #9b7293; }
+        .btn-sync { background-color: var(--pause-grey); margin-top: 15px; margin-left: 10px;}
+        .btn-sync:hover { background-color: #5a6268; }
 
-        /* Table */
         table { width: 100%; border-collapse: collapse; margin-bottom: 40px; background-color: var(--panel-bg); box-shadow: 0 4px 6px rgba(0,0,0,0.3); border-radius: 8px; overflow: hidden; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
         th { background-color: #1e293b; color: var(--accent-blue); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
@@ -72,7 +69,6 @@
         .test-row { border-left: 4px solid var(--error-red); background-color: rgba(220, 53, 69, 0.05); }
         .freq-tag { background-color: rgba(77, 184, 255, 0.2); color: var(--accent-blue); padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: bold; border: 1px solid var(--accent-blue);}
 
-        /* Footer */
         .footer { margin-top: auto; padding: 20px; background-color: var(--panel-bg); border-top: 1px solid var(--border-color); border-radius: 8px; }
         .footer h3 { text-align: center; color: var(--text-muted); letter-spacing: 2px; font-size: 14px; text-transform: uppercase; margin-top: 0; }
         .engineers { display: flex; justify-content: center; gap: 40px; text-align: center; }
@@ -91,7 +87,6 @@
         <div id="cloud-badge" class="badge yellow">⏳ Connecting Cloud...</div>
     </div>
 
-    <!-- HARDWARE DASHBOARD -->
     <div class="hardware-dashboard">
         <div class="hw-item">
             <div class="hw-title">Ground Station ESP32</div>
@@ -112,19 +107,16 @@
         </div>
     </div>
 
-    <!-- CONTROLS & STATS -->
     <div class="controls">
         <div class="counter-box">Total Real Packets Received: <strong id="packet-count">0</strong></div><br>
         <button id="test-btn">🧪 Send Simulated Test Packet</button>
     </div>
 
-    <!-- COMMAND & CONTROL PANEL -->
     <div class="c2-panel">
         <h3>🛰️ Over-The-Air Satellite Manager (C2)</h3>
         <p style="font-size: 13px; color: var(--text-muted);">Dynamically add, edit, or delete satellites from the ESP32's live scanning rotation.</p>
         
         <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-            <!-- Add/Edit Form -->
             <div style="flex: 1; min-width: 300px;">
                 <h4 style="color: var(--accent-blue); margin-top: 0;">Add / Edit Satellite</h4>
                 <div class="input-group">
@@ -149,9 +141,9 @@
                 </div>
                 <br>
                 <button id="beam-btn" class="btn-beam">📡 Beam Command to Station</button>
+                <button id="sync-btn" class="btn-sync">🔄 Sync Cloud to ESP32</button>
             </div>
             
-            <!-- Active List -->
             <div style="flex: 1; min-width: 300px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; border: 1px solid var(--border-color);">
                 <h4 style="color: var(--accent-blue); margin-top: 0;">Currently Scanning (Live Roster)</h4>
                 <ul id="managed-sat-list" style="list-style: none; padding: 0; margin: 0; font-size: 14px;">
@@ -161,7 +153,6 @@
         </div>
     </div>
 
-    <!-- DATA TABLE -->
     <table>
         <thead>
             <tr>
@@ -193,10 +184,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-        // Your Exact Firebase Setup
         const firebaseConfig = {
             apiKey: "AIzaSyBPer8sl3OlwTf6vdVwcyzBCNu9Re0--UM",
             authDomain: "satellitegroundstation-17f0d.firebaseapp.com",
@@ -214,46 +204,17 @@
         const cloudBadge = document.getElementById('cloud-badge');
         let totalRealPackets = 0;
 
-        // NEW: Managed Satellite List Logic
-        let managedProfiles = [
-            {name: "FOSSASAT / Generic", freq: 436.7, bw: 125.0, sf: 11, cr: 8, enabled: true},
-            {name: "NORBY / CubeSat", freq: 436.7, bw: 125.0, sf: 9, cr: 8, enabled: true},
-            {name: "Tianqi-39", freq: 400.265, bw: 125.0, sf: 10, cr: 5, enabled: true},
-            {name: "Tianqi-21", freq: 400.45, bw: 500.0, sf: 9, cr: 5, enabled: true}
-        ];
-
         signInAnonymously(auth).then(() => {
             cloudBadge.textContent = "☁️ Cloud Sync Active";
             cloudBadge.className = "badge green";
             loadHistoricalData();
-
-            // CLOUD MEMORY: Load the saved Roster from Firebase!
-            const settingsRef = doc(db, "ground_station", "settings");
-            onSnapshot(settingsRef, (docSnap) => {
-                if (docSnap.exists() && docSnap.data().roster) {
-                    managedProfiles = docSnap.data().roster;
-                } else {
-                    // First time? Save the defaults to Firebase
-                    setDoc(settingsRef, { roster: managedProfiles });
-                }
-                renderManagedList(); // Update the UI
-            });
-
+            loadRosterFromCloud(); // Load the saved satellites!
         }).catch((error) => {
             cloudBadge.textContent = "⚠️ Cloud Auth Failed";
             cloudBadge.className = "badge red";
+            console.error(error);
         });
 
-        // Function to push roster updates to the cloud
-        async function saveRosterToCloud() {
-            try {
-                await setDoc(doc(db, "ground_station", "settings"), { roster: managedProfiles });
-            } catch (e) {
-                console.error("Error saving roster to cloud: ", e);
-            }
-        }
-
-        // --- HARDWARE DASHBOARD LOGIC (Persistent Timing) ---
         let espCurrentState = localStorage.getItem('hw_state') || 'OFFLINE';
         let stateLastChangedTime = parseInt(localStorage.getItem('hw_time')) || Date.now();
         let espUptimeSeconds = parseInt(localStorage.getItem('hw_uptime')) || 0;
@@ -314,7 +275,7 @@
         
         const TOPIC_DATA = 'space_nav/satellite/data';
         const TOPIC_STATUS = 'space_nav/satellite/status';
-        const TOPIC_CONFIG = 'space_nav/satellite/config';
+        const TOPIC_CONFIG = 'space_nav/satellite/config'; 
 
         mqttClient.on('connect', function () {
             mqttBadge.textContent = "🟢 Broker Connected - Ready";
@@ -465,16 +426,39 @@
             mqttClient.publish(TOPIC_DATA, JSON.stringify(testPayload));
         });
 
+        let managedProfiles = [
+            {name: "FOSSASAT / Generic", freq: 436.7, bw: 125.0, sf: 11, cr: 8, enabled: true},
+            {name: "NORBY / CubeSat", freq: 436.7, bw: 125.0, sf: 9, cr: 8, enabled: true},
+            {name: "Tianqi-39", freq: 400.265, bw: 125.0, sf: 10, cr: 5, enabled: true},
+            {name: "Tianqi-21", freq: 400.45, bw: 500.0, sf: 9, cr: 5, enabled: true}
+        ];
+
+        // Load the saved settings from Firebase Cloud Memory
+        async function loadRosterFromCloud() {
+            try {
+                const docSnap = await getDoc(doc(db, "c2_config", "roster"));
+                if (docSnap.exists() && docSnap.data().profiles) {
+                    managedProfiles = docSnap.data().profiles;
+                    renderManagedList();
+                }
+            } catch (error) {
+                console.log("Could not load cloud roster, using defaults.", error);
+            }
+        }
+
+        // Save settings to Firebase Cloud Memory
+        async function saveRosterToCloud() {
+            try {
+                await setDoc(doc(db, "c2_config", "roster"), { profiles: managedProfiles });
+            } catch (error) {
+                console.error("Failed to save to cloud", error);
+            }
+        }
+
         function renderManagedList() {
             const list = document.getElementById('managed-sat-list');
             list.innerHTML = '';
             managedProfiles.forEach((sat, index) => {
-                const isEnabled = sat.enabled !== false; // defaults to true
-                const toggleBg = isEnabled ? 'var(--btn-slate)' : 'var(--success-green)';
-                const toggleText = isEnabled ? 'Pause' : 'Enable';
-                const opacityStyle = isEnabled ? '1' : '0.4';
-                const pausedLabel = isEnabled ? '' : '<span style="color:var(--error-red); font-size:10px; font-weight:bold; margin-left:8px;">(PAUSED)</span>';
-
                 const li = document.createElement('li');
                 li.style.marginBottom = '10px';
                 li.style.display = 'flex';
@@ -482,13 +466,20 @@
                 li.style.alignItems = 'center';
                 li.style.borderBottom = '1px solid var(--border-color)';
                 li.style.paddingBottom = '5px';
-                li.style.opacity = opacityStyle;
-                li.style.transition = 'opacity 0.3s';
                 
+                const statusTag = sat.enabled ? '' : '<span style="color:var(--error-red); font-size:10px; font-weight:bold;">(PAUSED)</span>';
+                const opacity = sat.enabled ? '1' : '0.5';
+
+                const toggleBtnColor = sat.enabled ? 'var(--pause-grey)' : 'var(--success-green)';
+                const toggleBtnText = sat.enabled ? 'Pause' : 'Enable';
+
                 li.innerHTML = `
-                    <span><strong style="color:white;">${sat.name}</strong> ${pausedLabel} <br><span style="color:var(--text-muted); font-size: 12px;">${sat.freq} MHz | BW: ${sat.bw} | SF${sat.sf}</span></span>
+                    <span style="opacity: ${opacity}">
+                        <strong style="color:white;">${sat.name}</strong> ${statusTag} <br>
+                        <span style="color:var(--text-muted); font-size: 12px;">${sat.freq} MHz | BW: ${sat.bw} | SF${sat.sf}</span>
+                    </span>
                     <div>
-                        <button onclick="toggleSat('${sat.name}')" style="background:${toggleBg}; color:white; padding:4px 10px; font-size:12px; margin-right:5px; border-radius: 3px;">${toggleText}</button>
+                        <button onclick="toggleSat(${index})" style="background:${toggleBtnColor}; color:white; padding:4px 10px; font-size:12px; margin-right:5px; border-radius: 3px;">${toggleBtnText}</button>
                         <button onclick="editSat(${index})" style="background:var(--warning-yellow); color:black; padding:4px 10px; font-size:12px; margin-right:5px; border-radius: 3px;">Edit</button>
                         <button onclick="deleteSat('${sat.name}')" style="background:var(--error-red); padding:4px 10px; font-size:12px; border-radius: 3px;">X</button>
                     </div>
@@ -497,18 +488,15 @@
             });
         }
 
-        window.toggleSat = function(name) {
-            const sat = managedProfiles.find(s => s.name === name);
-            if(sat) {
-                sat.enabled = sat.enabled === false ? true : false;
-                
-                // Beam the toggle command to ESP32
-                const payload = { cmd: "toggle", name: name, enabled: sat.enabled };
-                mqttClient.publish(TOPIC_CONFIG, JSON.stringify(payload));
-                
-                renderManagedList(); // Update UI
-                saveRosterToCloud(); // Save change to Firebase!
-            }
+        window.toggleSat = async function(index) {
+            managedProfiles[index].enabled = !managedProfiles[index].enabled;
+            const sat = managedProfiles[index];
+            
+            // Tell ESP32 to Toggle
+            mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "toggle", name: sat.name, enabled: sat.enabled }));
+            
+            renderManagedList();
+            await saveRosterToCloud(); // Save memory!
         };
 
         window.editSat = function(index) {
@@ -520,7 +508,7 @@
             document.getElementById('new-sat-cr').value = sat.cr;
         };
 
-        window.deleteSat = function(name) {
+        window.deleteSat = async function(name) {
             if(managedProfiles.length <= 1) {
                 alert("Cannot delete the last satellite! The scanner needs at least one target to function.");
                 return;
@@ -528,14 +516,13 @@
             if(confirm(`Are you sure you want to remove ${name} from the scanning rotation?`)) {
                 mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "delete", name: name }));
                 managedProfiles = managedProfiles.filter(s => s.name !== name);
-                
                 renderManagedList();
-                saveRosterToCloud(); // Save deletion to Firebase!
+                await saveRosterToCloud();
             }
         };
 
-        document.getElementById('beam-btn').addEventListener('click', () => {
-            const name = document.getElementById('new-sat-name').value.trim();
+        document.getElementById('beam-btn').addEventListener('click', async () => {
+            const name = document.getElementById('new-sat-name').value;
             const freq = parseFloat(document.getElementById('new-sat-freq').value);
             const bw = parseFloat(document.getElementById('new-sat-bw').value);
             const sf = parseInt(document.getElementById('new-sat-sf').value);
@@ -546,7 +533,7 @@
                 return;
             }
 
-            const configPayload = { cmd: "add", name, freq, bw, sf, cr, enabled: true };
+            const configPayload = { cmd: "add", name, freq, bw, sf, cr };
             mqttClient.publish(TOPIC_CONFIG, JSON.stringify(configPayload));
             
             const existingIdx = managedProfiles.findIndex(s => s.name === name);
@@ -557,11 +544,29 @@
             }
             
             renderManagedList();
-            saveRosterToCloud(); // Save new satellite to Firebase!
+            await saveRosterToCloud();
             
-            alert(`Command sent! The ESP32 is now tracking ${name}.`);
+            alert(`Command sent! Tracker memory updated for ${name}.`);
             document.getElementById('new-sat-name').value = '';
         });
+
+        document.getElementById('sync-btn').addEventListener('click', () => {
+            // Rapid-fire the entire memory to the ESP32 to sync it up
+            managedProfiles.forEach((sat, index) => {
+                setTimeout(() => {
+                    // Send parameter data
+                    mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "add", name: sat.name, freq: sat.freq, bw: sat.bw, sf: sat.sf, cr: sat.cr }));
+                    // Ensure the paused state matches
+                    setTimeout(() => {
+                        mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "toggle", name: sat.name, enabled: sat.enabled }));
+                    }, 500); 
+                }, index * 1500); // Wait 1.5s between each to prevent spamming
+            });
+            alert("Syncing Cloud Memory to ESP32... Please wait 5 seconds for completion.");
+        });
+
+        // Ensure UI renders right away using defaults while cloud loads
+        renderManagedList();
 
     </script>
 </body>
