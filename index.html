@@ -20,6 +20,7 @@
             --text-main: #e0e6ed;
             --text-muted: #8a99a8;
             --accent-purple: #b48ead;
+            --btn-slate: #64748b;
         }
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; display: flex; flex-direction: column; min-height: 100vh; }
@@ -53,7 +54,7 @@
         button { background-color: #17a2b8; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; transition: background 0.3s; font-weight: bold; }
         button:hover { background-color: #138496; }
 
-        /* NEW: Satellite Command Form Styles */
+        /* Satellite Command Form Styles */
         .c2-panel { background-color: #1e293b; border: 1px solid var(--accent-purple); border-radius: 8px; padding: 20px; margin-bottom: 20px; text-align: left; }
         .c2-panel h3 { color: var(--accent-purple); margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
         .input-group { display: inline-block; margin-right: 15px; margin-bottom: 10px; }
@@ -117,7 +118,7 @@
         <button id="test-btn">🧪 Send Simulated Test Packet</button>
     </div>
 
-    <!-- NEW: COMMAND & CONTROL PANEL -->
+    <!-- COMMAND & CONTROL PANEL -->
     <div class="c2-panel">
         <h3>🛰️ Over-The-Air Satellite Manager (C2)</h3>
         <p style="font-size: 13px; color: var(--text-muted);">Dynamically add, edit, or delete satellites from the ESP32's live scanning rotation.</p>
@@ -192,7 +193,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
         // Your Exact Firebase Setup
@@ -213,14 +214,44 @@
         const cloudBadge = document.getElementById('cloud-badge');
         let totalRealPackets = 0;
 
+        // NEW: Managed Satellite List Logic
+        let managedProfiles = [
+            {name: "FOSSASAT / Generic", freq: 436.7, bw: 125.0, sf: 11, cr: 8, enabled: true},
+            {name: "NORBY / CubeSat", freq: 436.7, bw: 125.0, sf: 9, cr: 8, enabled: true},
+            {name: "Tianqi-39", freq: 400.265, bw: 125.0, sf: 10, cr: 5, enabled: true},
+            {name: "Tianqi-21", freq: 400.45, bw: 500.0, sf: 9, cr: 5, enabled: true}
+        ];
+
         signInAnonymously(auth).then(() => {
             cloudBadge.textContent = "☁️ Cloud Sync Active";
             cloudBadge.className = "badge green";
             loadHistoricalData();
+
+            // CLOUD MEMORY: Load the saved Roster from Firebase!
+            const settingsRef = doc(db, "ground_station", "settings");
+            onSnapshot(settingsRef, (docSnap) => {
+                if (docSnap.exists() && docSnap.data().roster) {
+                    managedProfiles = docSnap.data().roster;
+                } else {
+                    // First time? Save the defaults to Firebase
+                    setDoc(settingsRef, { roster: managedProfiles });
+                }
+                renderManagedList(); // Update the UI
+            });
+
         }).catch((error) => {
             cloudBadge.textContent = "⚠️ Cloud Auth Failed";
             cloudBadge.className = "badge red";
         });
+
+        // Function to push roster updates to the cloud
+        async function saveRosterToCloud() {
+            try {
+                await setDoc(doc(db, "ground_station", "settings"), { roster: managedProfiles });
+            } catch (e) {
+                console.error("Error saving roster to cloud: ", e);
+            }
+        }
 
         // --- HARDWARE DASHBOARD LOGIC (Persistent Timing) ---
         let espCurrentState = localStorage.getItem('hw_state') || 'OFFLINE';
@@ -283,7 +314,7 @@
         
         const TOPIC_DATA = 'space_nav/satellite/data';
         const TOPIC_STATUS = 'space_nav/satellite/status';
-        const TOPIC_CONFIG = 'space_nav/satellite/config'; // NEW TOPIC
+        const TOPIC_CONFIG = 'space_nav/satellite/config';
 
         mqttClient.on('connect', function () {
             mqttBadge.textContent = "🟢 Broker Connected - Ready";
@@ -321,7 +352,6 @@
             document.getElementById('hw-wifi-bars').textContent = renderWiFiBars(rssi) + ` [${rssi}dBm]`;
             document.getElementById('hw-wifi-bars').className = "hw-value online";
 
-            // UPDATED: Show the Live Hopping Target AND the exact Frequency prominently!
             if (data.lora_ok && data.target_name) {
                 document.getElementById('hw-scanner-status').innerHTML = `📡 ${data.target_name}<br><span class="freq-highlight">${data.target_freq} MHz</span>`;
                 document.getElementById('hw-scanner-status').className = "hw-value scanning";
@@ -368,7 +398,6 @@
                 timeStr = dateObj.toLocaleTimeString();
             }
 
-            // UPDATED: The exact frequency is now visually stamped into the data row
             const displayFreq = data.frequency ? `<span class="freq-tag">${data.frequency} MHz</span>` : '';
 
             row.innerHTML = `
@@ -425,7 +454,6 @@
             }
         });
 
-        // Interactive Testing Button
         document.getElementById('test-btn').addEventListener('click', () => {
             const testPayload = {
                 packet: `FOSSA-TEST-BEACON-VOLT-4.2V-TEMP-${Math.floor(Math.random() * 20 + 10)}C`,
@@ -437,18 +465,16 @@
             mqttClient.publish(TOPIC_DATA, JSON.stringify(testPayload));
         });
 
-        // NEW: Managed Satellite List Logic
-        let managedProfiles = [
-            {name: "FOSSASAT / Generic", freq: 436.7, bw: 125.0, sf: 11, cr: 8},
-            {name: "NORBY / CubeSat", freq: 436.7, bw: 125.0, sf: 9, cr: 8},
-            {name: "Tianqi-39", freq: 400.265, bw: 125.0, sf: 10, cr: 5},
-            {name: "Tianqi-21", freq: 400.45, bw: 500.0, sf: 9, cr: 5}
-        ];
-
         function renderManagedList() {
             const list = document.getElementById('managed-sat-list');
             list.innerHTML = '';
             managedProfiles.forEach((sat, index) => {
+                const isEnabled = sat.enabled !== false; // defaults to true
+                const toggleBg = isEnabled ? 'var(--btn-slate)' : 'var(--success-green)';
+                const toggleText = isEnabled ? 'Pause' : 'Enable';
+                const opacityStyle = isEnabled ? '1' : '0.4';
+                const pausedLabel = isEnabled ? '' : '<span style="color:var(--error-red); font-size:10px; font-weight:bold; margin-left:8px;">(PAUSED)</span>';
+
                 const li = document.createElement('li');
                 li.style.marginBottom = '10px';
                 li.style.display = 'flex';
@@ -456,10 +482,13 @@
                 li.style.alignItems = 'center';
                 li.style.borderBottom = '1px solid var(--border-color)';
                 li.style.paddingBottom = '5px';
+                li.style.opacity = opacityStyle;
+                li.style.transition = 'opacity 0.3s';
                 
                 li.innerHTML = `
-                    <span><strong style="color:white;">${sat.name}</strong> <br><span style="color:var(--text-muted); font-size: 12px;">${sat.freq} MHz | BW: ${sat.bw} | SF${sat.sf}</span></span>
+                    <span><strong style="color:white;">${sat.name}</strong> ${pausedLabel} <br><span style="color:var(--text-muted); font-size: 12px;">${sat.freq} MHz | BW: ${sat.bw} | SF${sat.sf}</span></span>
                     <div>
+                        <button onclick="toggleSat('${sat.name}')" style="background:${toggleBg}; color:white; padding:4px 10px; font-size:12px; margin-right:5px; border-radius: 3px;">${toggleText}</button>
                         <button onclick="editSat(${index})" style="background:var(--warning-yellow); color:black; padding:4px 10px; font-size:12px; margin-right:5px; border-radius: 3px;">Edit</button>
                         <button onclick="deleteSat('${sat.name}')" style="background:var(--error-red); padding:4px 10px; font-size:12px; border-radius: 3px;">X</button>
                     </div>
@@ -468,7 +497,20 @@
             });
         }
 
-        // Populates the form fields for editing
+        window.toggleSat = function(name) {
+            const sat = managedProfiles.find(s => s.name === name);
+            if(sat) {
+                sat.enabled = sat.enabled === false ? true : false;
+                
+                // Beam the toggle command to ESP32
+                const payload = { cmd: "toggle", name: name, enabled: sat.enabled };
+                mqttClient.publish(TOPIC_CONFIG, JSON.stringify(payload));
+                
+                renderManagedList(); // Update UI
+                saveRosterToCloud(); // Save change to Firebase!
+            }
+        };
+
         window.editSat = function(index) {
             const sat = managedProfiles[index];
             document.getElementById('new-sat-name').value = sat.name;
@@ -478,7 +520,6 @@
             document.getElementById('new-sat-cr').value = sat.cr;
         };
 
-        // Beams the delete command and updates UI
         window.deleteSat = function(name) {
             if(managedProfiles.length <= 1) {
                 alert("Cannot delete the last satellite! The scanner needs at least one target to function.");
@@ -487,13 +528,14 @@
             if(confirm(`Are you sure you want to remove ${name} from the scanning rotation?`)) {
                 mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "delete", name: name }));
                 managedProfiles = managedProfiles.filter(s => s.name !== name);
+                
                 renderManagedList();
+                saveRosterToCloud(); // Save deletion to Firebase!
             }
         };
 
-        // NEW: Beam Configuration Button Logic (Updated for Add/Edit)
         document.getElementById('beam-btn').addEventListener('click', () => {
-            const name = document.getElementById('new-sat-name').value;
+            const name = document.getElementById('new-sat-name').value.trim();
             const freq = parseFloat(document.getElementById('new-sat-freq').value);
             const bw = parseFloat(document.getElementById('new-sat-bw').value);
             const sf = parseInt(document.getElementById('new-sat-sf').value);
@@ -504,29 +546,22 @@
                 return;
             }
 
-            // Command payload includes "cmd": "add"
-            const configPayload = { cmd: "add", name, freq, bw, sf, cr };
-            
-            // Publish the command to the ESP32
+            const configPayload = { cmd: "add", name, freq, bw, sf, cr, enabled: true };
             mqttClient.publish(TOPIC_CONFIG, JSON.stringify(configPayload));
             
-            // Update local website UI list (Handle Edit or Add)
             const existingIdx = managedProfiles.findIndex(s => s.name === name);
             if(existingIdx >= 0) {
-                managedProfiles[existingIdx] = {name, freq, bw, sf, cr};
+                managedProfiles[existingIdx] = {name, freq, bw, sf, cr, enabled: true};
             } else {
-                managedProfiles.push({name, freq, bw, sf, cr});
+                managedProfiles.push({name, freq, bw, sf, cr, enabled: true});
             }
+            
             renderManagedList();
+            saveRosterToCloud(); // Save new satellite to Firebase!
             
-            alert(`Command sent! The ESP32 ground station is now tracking ${name}.`);
-            
-            // Clear inputs
+            alert(`Command sent! The ESP32 is now tracking ${name}.`);
             document.getElementById('new-sat-name').value = '';
         });
-
-        // Initialize the visual list on page load
-        renderManagedList();
 
     </script>
 </body>
