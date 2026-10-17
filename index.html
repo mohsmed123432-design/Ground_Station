@@ -510,6 +510,23 @@
                         <label>Coding Rate (4/x)</label>
                         <input type="number" id="new-sat-cr" value="8" placeholder="8 means 4/8">
                     </div>
+                    <!-- NEW INPUTS ADDED HERE -->
+                    <div class="input-group">
+                        <label>Sync Word (Hex)</label>
+                        <input type="text" id="new-sat-sync" value="0x12" placeholder="0x12" style="width: 80px;">
+                    </div>
+                    <div class="input-group">
+                        <label>Preamble</label>
+                        <input type="number" id="new-sat-preamble" value="8" style="width: 80px;">
+                    </div>
+                    <div class="input-group">
+                        <label>CRC Enabled</label>
+                        <select id="new-sat-crc" style="background: rgba(11, 14, 20, 0.85); border: 1px solid var(--border-color); color: white; padding: 8px 12px; border-radius: 6px; outline: none;">
+                            <option value="true">Enabled</option>
+                            <option value="false">Disabled</option>
+                        </select>
+                    </div>
+                    <!-- ===================== -->
                     <br>
                     <button id="beam-btn" class="btn-beam">📡 Beam Command to Station</button>
                     <button id="sync-btn" class="btn-sync">🔄 Sync Cloud to ESP32</button>
@@ -869,11 +886,12 @@
             mqttClient.publish(TOPIC_DATA, JSON.stringify(testPayload));
         });
 
+        // Initialize managedProfiles with the new parameters
         let managedProfiles = [
-            {name: "FOSSASAT / Generic", freq: 436.7, bw: 125.0, sf: 11, cr: 8, enabled: true},
-            {name: "NORBY / CubeSat", freq: 436.7, bw: 125.0, sf: 9, cr: 8, enabled: true},
-            {name: "Tianqi-39", freq: 400.265, bw: 125.0, sf: 10, cr: 5, enabled: true},
-            {name: "Tianqi-21", freq: 400.45, bw: 500.0, sf: 9, cr: 5, enabled: true}
+            {name: "FOSSASAT / Generic", freq: 436.7, bw: 125.0, sf: 11, cr: 8, sync: "0x12", preamble: 8, crc: true, enabled: true},
+            {name: "NORBY / CubeSat", freq: 436.7, bw: 125.0, sf: 9, cr: 8, sync: "0x12", preamble: 8, crc: true, enabled: true},
+            {name: "Tianqi-39", freq: 400.265, bw: 125.0, sf: 10, cr: 5, sync: "0x12", preamble: 9, crc: true, enabled: true},
+            {name: "Tianqi-21", freq: 400.45, bw: 500.0, sf: 9, cr: 5, sync: "0x12", preamble: 8, crc: true, enabled: true}
         ];
 
         async function loadRosterFromCloud() {
@@ -913,11 +931,16 @@
 
                 const toggleBtnColor = sat.enabled ? 'var(--pause-grey)' : 'var(--success-green)';
                 const toggleBtnText = sat.enabled ? 'Pause' : 'Enable';
+                
+                // Provide defaults if the cloud data didn't have sync/preamble saved yet
+                const dispSync = sat.sync || "0x12";
+                const dispPre = sat.preamble || 8;
+                const dispCRC = sat.crc !== false ? "ON" : "OFF";
 
                 li.innerHTML = `
                     <span style="opacity: ${opacity}">
                         <strong style="color:white; font-size:14px;">${sat.name}</strong> ${statusTag} <br>
-                        <span style="color:var(--text-muted); font-size: 12px;">${sat.freq} MHz | BW: ${sat.bw} | SF${sat.sf}</span>
+                        <span style="color:var(--text-muted); font-size: 12px;">${sat.freq} MHz | BW: ${sat.bw} | SF${sat.sf} | Sync: ${dispSync} | Pre: ${dispPre} | CRC: ${dispCRC}</span>
                     </span>
                     <div style="display:flex; gap:4px;">
                         <button onclick="toggleSat(${index})" style="background:${toggleBtnColor}; padding:4px 8px; font-size:11px; border-radius: 4px;">${toggleBtnText}</button>
@@ -946,6 +969,9 @@
             document.getElementById('new-sat-bw').value = sat.bw;
             document.getElementById('new-sat-sf').value = sat.sf;
             document.getElementById('new-sat-cr').value = sat.cr;
+            document.getElementById('new-sat-sync').value = sat.sync || "0x12";
+            document.getElementById('new-sat-preamble').value = sat.preamble || 8;
+            document.getElementById('new-sat-crc').value = sat.crc !== false ? "true" : "false";
         };
 
         window.deleteSat = async function(name) {
@@ -968,20 +994,25 @@
             const bw = parseFloat(document.getElementById('new-sat-bw').value);
             const sf = parseInt(document.getElementById('new-sat-sf').value);
             const cr = parseInt(document.getElementById('new-sat-cr').value);
+            
+            const syncStr = document.getElementById('new-sat-sync').value.trim();
+            const sync = parseInt(syncStr, 16); // Convert Hex string to integer
+            const preamble = parseInt(document.getElementById('new-sat-preamble').value);
+            const crc = document.getElementById('new-sat-crc').value === "true";
 
-            if (!name || isNaN(freq) || isNaN(bw) || isNaN(sf) || isNaN(cr)) {
+            if (!name || isNaN(freq) || isNaN(bw) || isNaN(sf) || isNaN(cr) || isNaN(sync) || isNaN(preamble)) {
                 await showCustomAlert("Please fill out all parameter fields with valid numbers!", "Input Required");
                 return;
             }
 
-            const configPayload = { cmd: "add", name, freq, bw, sf, cr };
+            const configPayload = { cmd: "add", name, freq, bw, sf, cr, sync, preamble, crc };
             mqttClient.publish(TOPIC_CONFIG, JSON.stringify(configPayload));
             
             const existingIdx = managedProfiles.findIndex(s => s.name === name);
             if (existingIdx >= 0) {
-                managedProfiles[existingIdx] = {name, freq, bw, sf, cr, enabled: true};
+                managedProfiles[existingIdx] = {name, freq, bw, sf, cr, sync: syncStr, preamble, crc, enabled: true};
             } else {
-                managedProfiles.push({name, freq, bw, sf, cr, enabled: true});
+                managedProfiles.push({name, freq, bw, sf, cr, sync: syncStr, preamble, crc, enabled: true});
             }
             
             renderManagedList();
@@ -994,7 +1025,10 @@
         document.getElementById('sync-btn').addEventListener('click', async () => {
             managedProfiles.forEach((sat, index) => {
                 setTimeout(() => {
-                    mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "add", name: sat.name, freq: sat.freq, bw: sat.bw, sf: sat.sf, cr: sat.cr }));
+                    const syncVal = parseInt(sat.sync, 16) || 0x12;
+                    const preVal = sat.preamble || 8;
+                    const crcVal = sat.crc !== false;
+                    mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "add", name: sat.name, freq: sat.freq, bw: sat.bw, sf: sat.sf, cr: sat.cr, sync: syncVal, preamble: preVal, crc: crcVal }));
                     setTimeout(() => {
                         mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "toggle", name: sat.name, enabled: sat.enabled }));
                     }, 500); 
