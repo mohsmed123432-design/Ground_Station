@@ -30,7 +30,6 @@
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
             background-color: var(--bg-color); 
-            /* Space background image with dark vignette overlay for maximum readability */
             background-image: 
                 radial-gradient(ellipse at center, rgba(6, 9, 14, 0.65) 0%, rgba(6, 9, 14, 0.88) 100%),
                 url('gettyimages-1780711348-640x640.png');
@@ -98,25 +97,10 @@
             gap: 6px;
         }
 
-        .badge.green { 
-            color: #4ade80; 
-            border-color: rgba(74, 222, 128, 0.5); 
-            box-shadow: 0 0 12px rgba(74, 222, 128, 0.2);
-        }
+        .badge.green { color: #4ade80; border-color: rgba(74, 222, 128, 0.5); box-shadow: 0 0 12px rgba(74, 222, 128, 0.2); }
+        .badge.red { color: #f87171; border-color: rgba(248, 113, 113, 0.5); box-shadow: 0 0 12px rgba(248, 113, 113, 0.2); }
+        .badge.yellow { color: #fde047; border-color: rgba(253, 224, 71, 0.5); box-shadow: 0 0 12px rgba(253, 224, 71, 0.2); }
 
-        .badge.red { 
-            color: #f87171; 
-            border-color: rgba(248, 113, 113, 0.5); 
-            box-shadow: 0 0 12px rgba(248, 113, 113, 0.2);
-        }
-
-        .badge.yellow { 
-            color: #fde047; 
-            border-color: rgba(253, 224, 71, 0.5); 
-            box-shadow: 0 0 12px rgba(253, 224, 71, 0.2);
-        }
-
-        /* Glassmorphism dashboard cards */
         .hardware-dashboard { 
             display: flex; 
             justify-content: space-around; 
@@ -150,18 +134,8 @@
             margin-bottom: 6px; 
         }
 
-        .hw-value { 
-            font-size: 18px; 
-            font-weight: 700; 
-            transition: color 0.3s; 
-        }
-
-        .hw-timer { 
-            font-size: 12px; 
-            color: var(--text-muted); 
-            margin-top: 6px; 
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-        }
+        .hw-value { font-size: 18px; font-weight: 700; transition: color 0.3s; }
+        .hw-timer { font-size: 12px; color: var(--text-muted); margin-top: 6px; font-family: 'SFMono-Regular', Consolas, monospace; }
         
         .hw-value.offline { color: var(--text-muted); }
         .hw-value.online { color: var(--success-green); }
@@ -180,10 +154,7 @@
             margin-top: 4px;
         }
 
-        .controls { 
-            text-align: center; 
-            margin-bottom: 24px; 
-        }
+        .controls { text-align: center; margin-bottom: 24px; }
 
         .counter-box { 
             display: inline-block; 
@@ -209,19 +180,10 @@
             font-weight: 600; 
         }
 
-        button:active {
-            transform: scale(0.98);
-        }
+        button:active { transform: scale(0.98); }
 
-        #test-btn {
-            background-color: #0284c7;
-            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
-        }
-
-        #test-btn:hover { 
-            background-color: #0369a1; 
-            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.5);
-        }
+        #test-btn { background-color: #0284c7; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35); }
+        #test-btn:hover { background-color: #0369a1; box-shadow: 0 6px 18px rgba(2, 132, 199, 0.5); }
 
         .c2-panel { 
             background: var(--panel-bg); 
@@ -235,66 +197,24 @@
             box-shadow: 0 8px 30px rgba(0,0,0,0.45);
         }
 
-        .c2-panel h3 { 
-            color: var(--accent-purple); 
-            margin-top: 0; 
-            border-bottom: 1px solid rgba(192, 132, 252, 0.2); 
-            padding-bottom: 10px; 
-            font-size: 1.15rem;
-        }
-
-        .input-group { 
-            display: inline-block; 
-            margin-right: 12px; 
-            margin-bottom: 12px; 
-        }
-
-        .input-group label { 
-            display: block; 
-            font-size: 11px; 
-            color: var(--text-muted); 
-            margin-bottom: 6px; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-        }
-
-        .input-group input { 
+        .input-group { display: inline-block; margin-right: 12px; margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .input-group input, .input-group select { 
             background: rgba(11, 14, 20, 0.85); 
             border: 1px solid var(--border-color); 
             color: white; 
             padding: 8px 12px; 
             border-radius: 6px; 
-            width: 120px; 
             outline: none;
             transition: border-color 0.2s;
         }
-
-        .input-group input:focus {
-            border-color: var(--accent-blue);
-            box-shadow: 0 0 8px rgba(77, 184, 255, 0.3);
-        }
+        .input-group input:focus { border-color: var(--accent-blue); box-shadow: 0 0 8px rgba(77, 184, 255, 0.3); }
         
-        .btn-beam { 
-            background-color: #9333ea; 
-            box-shadow: 0 4px 14px rgba(147, 51, 234, 0.35);
-            margin-top: 15px;
-        }
+        .btn-beam { background-color: #9333ea; box-shadow: 0 4px 14px rgba(147, 51, 234, 0.35); margin-top: 15px; }
+        .btn-beam:hover { background-color: #7e22ce; }
+        .btn-sync { background-color: var(--pause-grey); margin-top: 15px; margin-left: 10px; }
+        .btn-sync:hover { background-color: #475569; }
 
-        .btn-beam:hover { 
-            background-color: #7e22ce; 
-        }
-
-        .btn-sync { 
-            background-color: var(--pause-grey); 
-            margin-top: 15px; 
-            margin-left: 10px;
-        }
-
-        .btn-sync:hover { 
-            background-color: #475569; 
-        }
-
-        /* Responsive glass table styling */
         .table-container {
             width: 100%;
             overflow-x: auto;
@@ -307,33 +227,13 @@
             -webkit-backdrop-filter: blur(12px);
         }
 
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin: 0;
-            background: transparent;
-        }
-
-        th, td { 
-            padding: 14px 16px; 
-            text-align: left; 
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08); 
-        }
-
-        th { 
-            background: rgba(15, 23, 42, 0.85); 
-            color: var(--accent-blue); 
-            font-size: 12px; 
-            text-transform: uppercase; 
-            letter-spacing: 1.2px; 
-        }
-
-        tr:hover { 
-            background-color: rgba(255, 255, 255, 0.04); 
-        }
+        table { width: 100%; border-collapse: collapse; margin: 0; background: transparent; }
+        th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+        th { background: rgba(15, 23, 42, 0.85); color: var(--accent-blue); font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px; }
+        tr:hover { background-color: rgba(255, 255, 255, 0.04); }
 
         .packet-raw { 
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace; 
+            font-family: 'SFMono-Regular', Consolas, monospace; 
             color: #a3be8c; 
             background: rgba(0, 0, 0, 0.4); 
             padding: 5px 8px; 
@@ -343,44 +243,25 @@
             font-size: 13px;
         }
 
-        .test-row { 
-            border-left: 4px solid var(--error-red); 
-            background-color: rgba(220, 53, 69, 0.08); 
-        }
+        .test-row { border-left: 4px solid var(--error-red); background-color: rgba(220, 53, 69, 0.08); }
+        .freq-tag { background-color: rgba(77, 184, 255, 0.15); color: var(--accent-blue); padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; border: 1px solid rgba(77, 184, 255, 0.35); }
 
-        .freq-tag { 
-            background-color: rgba(77, 184, 255, 0.15); 
-            color: var(--accent-blue); 
-            padding: 2px 7px; 
-            border-radius: 4px; 
-            font-size: 11px; 
-            font-weight: 600; 
-            border: 1px solid rgba(77, 184, 255, 0.35);
-        }
-
-        /* Modal Dialog for Alert/Confirm Replacement */
         .custom-dialog-backdrop {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(6px);
             z-index: 9999;
-            align-items: center;
-            justify-content: center;
+            align-items: center; justify-content: center;
         }
 
         .custom-dialog-card {
             background: #151b26;
             border: 1px solid var(--border-color);
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-            border-radius: 12px;
-            padding: 24px;
-            max-width: 420px;
-            width: 90%;
+            border-radius: 12px; padding: 24px;
+            max-width: 420px; width: 90%;
             text-align: center;
             animation: fadeInDialog 0.2s ease-out forwards;
         }
@@ -390,59 +271,44 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        .dialog-btn-container {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-top: 20px;
-        }
+        .dialog-btn-container { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
 
-        /* Footer card */
+        /* Security UI Styles */
+        .icon-btn { 
+            padding: 6px 14px; 
+            font-size: 12px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            border: none;
+        }
+        .settings-input {
+            width: 100%;
+            background: rgba(11, 14, 20, 0.85); 
+            border: 1px solid var(--border-color); 
+            color: white; 
+            padding: 10px; 
+            border-radius: 6px; 
+            margin-top: 6px;
+            margin-bottom: 15px;
+            outline: none;
+            font-family: inherit;
+        }
+        .settings-input:focus { border-color: var(--accent-blue); }
+
         .footer { 
-            margin-top: auto; 
-            padding: 20px; 
+            margin-top: auto; padding: 20px; 
             background: var(--panel-bg); 
             border: 1px solid var(--border-color); 
             border-radius: 12px; 
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             box-shadow: 0 6px 25px rgba(0,0,0,0.4);
         }
-
-        .footer h3 { 
-            text-align: center; 
-            color: var(--text-muted); 
-            letter-spacing: 2px; 
-            font-size: 12px; 
-            text-transform: uppercase; 
-            margin-top: 0; 
-            margin-bottom: 16px;
-        }
-
-        .engineers { 
-            display: flex; 
-            justify-content: center; 
-            gap: 40px; 
-            flex-wrap: wrap; 
-        }
-
-        .engineer-card { 
-            border-left: 3px solid var(--accent-blue); 
-            padding-left: 14px; 
-            text-align: left; 
-        }
-
-        .engineer-card strong { 
-            color: var(--accent-blue); 
-            font-size: 16px; 
-            display: block; 
-            letter-spacing: 0.3px;
-        }
-
-        .engineer-card span { 
-            color: var(--text-muted); 
-            font-size: 13px; 
-        }
+        .footer h3 { text-align: center; color: var(--text-muted); letter-spacing: 2px; font-size: 12px; text-transform: uppercase; margin-top: 0; margin-bottom: 16px; }
+        .engineers { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; }
+        .engineer-card { border-left: 3px solid var(--accent-blue); padding-left: 14px; text-align: left; }
+        .engineer-card strong { color: var(--accent-blue); font-size: 16px; display: block; letter-spacing: 0.3px; }
+        .engineer-card span { color: var(--text-muted); font-size: 13px; }
     </style>
 </head>
 <body>
@@ -482,12 +348,21 @@
         </div>
 
         <div class="c2-panel">
-            <h3>🛰️ Over-The-Air Satellite Manager (C2)</h3>
+            <!-- SECURITY HEADER -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(192, 132, 252, 0.2); padding-bottom: 10px; margin-bottom: 16px;">
+                <h3 style="border:none; padding:0; margin:0; color: var(--accent-purple); font-size: 1.15rem;">🛰️ Over-The-Air Satellite Manager (C2)</h3>
+                <div>
+                    <button id="lock-btn" class="icon-btn" style="background: var(--warning-yellow); color: #111;">🔒 Unlock to Edit</button>
+                    <button id="settings-btn" class="icon-btn" style="background: var(--pause-grey); display: none;">⚙️ Settings</button>
+                </div>
+            </div>
+
             <p style="font-size: 13px; color: var(--text-muted); margin-top: 4px; margin-bottom: 16px;">
                 Dynamically add, edit, or delete satellites from the ESP32's live scanning rotation.
             </p>
             
-            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <!-- C2 CONTROLS AREA (Locked by default) -->
+            <div id="c2-content" style="opacity: 0.4; pointer-events: none; transition: all 0.3s; display: flex; gap: 20px; flex-wrap: wrap;">
                 <div style="flex: 1; min-width: 290px;">
                     <h4 style="color: var(--accent-blue); margin-top: 0; margin-bottom: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.8px;">Add / Edit Satellite</h4>
                     <div class="input-group">
@@ -496,24 +371,23 @@
                     </div>
                     <div class="input-group">
                         <label>Frequency (MHz)</label>
-                        <input type="number" step="0.0001" id="new-sat-freq" placeholder="436.9389">
+                        <input type="number" step="0.0001" id="new-sat-freq" placeholder="436.9389" style="width: 100px;">
                     </div>
                     <div class="input-group">
                         <label>Bandwidth (kHz)</label>
-                        <input type="number" step="0.1" id="new-sat-bw" value="125.0">
+                        <input type="number" step="0.1" id="new-sat-bw" value="125.0" style="width: 100px;">
                     </div>
                     <div class="input-group">
                         <label>Spreading Factor</label>
-                        <input type="number" id="new-sat-sf" value="9">
+                        <input type="number" id="new-sat-sf" value="9" style="width: 90px;">
                     </div>
                     <div class="input-group">
                         <label>Coding Rate (4/x)</label>
-                        <input type="number" id="new-sat-cr" value="8" placeholder="8 means 4/8">
+                        <input type="number" id="new-sat-cr" value="8" placeholder="8 means 4/8" style="width: 90px;">
                     </div>
-                    <!-- NEW INPUTS ADDED HERE -->
                     <div class="input-group">
                         <label>Sync Word (Hex)</label>
-                        <input type="text" id="new-sat-sync" value="0x12" placeholder="0x12" style="width: 80px;">
+                        <input type="text" id="new-sat-sync" value="0x12" placeholder="0x12" style="width: 90px;">
                     </div>
                     <div class="input-group">
                         <label>Preamble</label>
@@ -521,12 +395,11 @@
                     </div>
                     <div class="input-group">
                         <label>CRC Enabled</label>
-                        <select id="new-sat-crc" style="background: rgba(11, 14, 20, 0.85); border: 1px solid var(--border-color); color: white; padding: 8px 12px; border-radius: 6px; outline: none;">
+                        <select id="new-sat-crc" style="width: 100px;">
                             <option value="true">Enabled</option>
                             <option value="false">Disabled</option>
                         </select>
                     </div>
-                    <!-- ===================== -->
                     <br>
                     <button id="beam-btn" class="btn-beam">📡 Beam Command to Station</button>
                     <button id="sync-btn" class="btn-sync">🔄 Sync Cloud to ESP32</button>
@@ -573,11 +446,25 @@
         </div>
     </div>
 
+    <!-- UNIVERSAL CUSTOM DIALOG -->
     <div id="custom-dialog" class="custom-dialog-backdrop">
         <div class="custom-dialog-card">
             <h3 id="custom-dialog-title" style="color: var(--accent-blue); margin-top: 0;">Notice</h3>
             <p id="custom-dialog-message" style="color: var(--text-main); font-size: 14px; line-height: 1.5;"></p>
+            
+            <!-- Password Input -->
+            <input type="password" id="dialog-password-input" class="settings-input" style="display: none;" placeholder="Enter password...">
+            
+            <!-- Settings Inputs -->
+            <div id="dialog-settings-area" style="display: none; text-align: left;">
+                <label style="font-size: 12px; color: var(--text-muted);">New Password:</label>
+                <input type="password" id="settings-new-pass" class="settings-input" placeholder="Leave blank to keep current">
+                <label style="font-size: 12px; color: var(--text-muted);">Recovery Email:</label>
+                <input type="email" id="settings-recovery-email" class="settings-input" placeholder="admin@space.com">
+            </div>
+
             <div class="dialog-btn-container">
+                <button id="dialog-forgot-btn" style="background: transparent; border: 1px solid var(--warning-yellow); color: var(--warning-yellow); display: none;">Forgot?</button>
                 <button id="dialog-cancel-btn" style="background: var(--pause-grey); display: none;">Cancel</button>
                 <button id="dialog-confirm-btn" style="background: #0284c7;">OK</button>
             </div>
@@ -589,7 +476,12 @@
         import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
 
-        // Modern replacement modal functions for alert() and confirm()
+        // --- SECURITY STATE ---
+        let isUnlocked = false;
+        let sysPassword = "admin"; 
+        let sysRecoveryEmail = "";
+
+        // Standard Alert Dialog
         function showCustomAlert(message, title = "System Notification") {
             return new Promise((resolve) => {
                 const dialog = document.getElementById('custom-dialog');
@@ -613,6 +505,7 @@
             });
         }
 
+        // Standard Confirm Dialog
         function showCustomConfirm(message, title = "Confirmation Required") {
             return new Promise((resolve) => {
                 const dialog = document.getElementById('custom-dialog');
@@ -627,20 +520,103 @@
                 confirmBtn.textContent = 'Proceed';
                 dialog.style.display = 'flex';
 
-                const handleConfirm = () => {
-                    cleanup();
-                    resolve(true);
-                };
-                const handleCancel = () => {
-                    cleanup();
-                    resolve(false);
-                };
-
+                const handleConfirm = () => { cleanup(); resolve(true); };
+                const handleCancel = () => { cleanup(); resolve(false); };
                 const cleanup = () => {
                     dialog.style.display = 'none';
                     confirmBtn.removeEventListener('click', handleConfirm);
                     cancelBtn.removeEventListener('click', handleCancel);
                 };
+                confirmBtn.addEventListener('click', handleConfirm);
+                cancelBtn.addEventListener('click', handleCancel);
+            });
+        }
+
+        // Password Prompt Dialog
+        function showPasswordPrompt() {
+            return new Promise((resolve) => {
+                const dialog = document.getElementById('custom-dialog');
+                const titleEl = document.getElementById('custom-dialog-title');
+                const msgEl = document.getElementById('custom-dialog-message');
+                const passInput = document.getElementById('dialog-password-input');
+                const confirmBtn = document.getElementById('dialog-confirm-btn');
+                const cancelBtn = document.getElementById('dialog-cancel-btn');
+                const forgotBtn = document.getElementById('dialog-forgot-btn');
+
+                titleEl.textContent = "Security Clearance";
+                msgEl.textContent = "Enter administrator password to edit satellite parameters.";
+                
+                passInput.style.display = 'block';
+                passInput.value = '';
+                cancelBtn.style.display = 'inline-block';
+                forgotBtn.style.display = 'inline-block';
+                confirmBtn.textContent = 'Unlock';
+                
+                dialog.style.display = 'flex';
+                passInput.focus();
+
+                const cleanup = () => {
+                    dialog.style.display = 'none';
+                    passInput.style.display = 'none';
+                    forgotBtn.style.display = 'none';
+                    confirmBtn.removeEventListener('click', handleConfirm);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    forgotBtn.removeEventListener('click', handleForgot);
+                };
+
+                const handleConfirm = () => { const val = passInput.value; cleanup(); resolve(val); };
+                const handleCancel = () => { cleanup(); resolve(null); };
+                const handleForgot = () => {
+                    cleanup();
+                    showCustomAlert(`If this were a production system, an email would be sent to: ${sysRecoveryEmail || 'No recovery email set.'}. (Hint: default is 'admin')`, "Forgot Password");
+                    resolve(null);
+                };
+
+                confirmBtn.addEventListener('click', handleConfirm);
+                cancelBtn.addEventListener('click', handleCancel);
+                forgotBtn.addEventListener('click', handleForgot);
+            });
+        }
+
+        // Settings Dialog
+        function showSettingsModal() {
+            return new Promise((resolve) => {
+                const dialog = document.getElementById('custom-dialog');
+                const titleEl = document.getElementById('custom-dialog-title');
+                const msgEl = document.getElementById('custom-dialog-message');
+                const settingsArea = document.getElementById('dialog-settings-area');
+                const newPassInput = document.getElementById('settings-new-pass');
+                const recEmailInput = document.getElementById('settings-recovery-email');
+                const confirmBtn = document.getElementById('dialog-confirm-btn');
+                const cancelBtn = document.getElementById('dialog-cancel-btn');
+
+                titleEl.textContent = "System Settings";
+                msgEl.textContent = "Update your Ground Station security settings.";
+                
+                settingsArea.style.display = 'block';
+                cancelBtn.style.display = 'inline-block';
+                confirmBtn.textContent = 'Save Changes';
+                
+                newPassInput.value = '';
+                recEmailInput.value = sysRecoveryEmail;
+
+                dialog.style.display = 'flex';
+
+                const cleanup = () => {
+                    dialog.style.display = 'none';
+                    settingsArea.style.display = 'none';
+                    confirmBtn.removeEventListener('click', handleConfirm);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                };
+
+                const handleConfirm = () => {
+                    const res = {
+                        pass: newPassInput.value.trim(),
+                        email: recEmailInput.value.trim()
+                    };
+                    cleanup(); resolve(res);
+                };
+                const handleCancel = () => { cleanup(); resolve(null); };
 
                 confirmBtn.addEventListener('click', handleConfirm);
                 cancelBtn.addEventListener('click', handleCancel);
@@ -669,33 +645,96 @@
             cloudBadge.className = "badge green";
             loadHistoricalData();
             loadRosterFromCloud();
+            loadSecurityConfig(); // Load security config on boot
         }).catch((error) => {
             cloudBadge.textContent = "⚠️ Cloud Auth Failed";
             cloudBadge.className = "badge red";
             console.error(error);
         });
 
+        // --- SECURITY LOGIC ---
+        async function loadSecurityConfig() {
+            try {
+                const docSnap = await getDoc(doc(db, "c2_config", "security"));
+                if (docSnap.exists()) {
+                    sysPassword = docSnap.data().password || "admin";
+                    sysRecoveryEmail = docSnap.data().recoveryEmail || "";
+                } else {
+                    await setDoc(doc(db, "c2_config", "security"), { password: "admin", recoveryEmail: "" });
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function updateLockUI() {
+            const content = document.getElementById('c2-content');
+            const lockBtn = document.getElementById('lock-btn');
+            const setBtn = document.getElementById('settings-btn');
+            
+            if (isUnlocked) {
+                content.style.opacity = '1';
+                content.style.pointerEvents = 'auto';
+                lockBtn.innerHTML = '🔓 Lock System';
+                lockBtn.style.background = 'var(--success-green)';
+                lockBtn.style.color = 'white';
+                setBtn.style.display = 'inline-block';
+            } else {
+                content.style.opacity = '0.4';
+                content.style.pointerEvents = 'none';
+                lockBtn.innerHTML = '🔒 Unlock to Edit';
+                lockBtn.style.background = 'var(--warning-yellow)';
+                lockBtn.style.color = '#111';
+                setBtn.style.display = 'none';
+            }
+        }
+
+        document.getElementById('lock-btn').addEventListener('click', () => {
+            if (isUnlocked) {
+                isUnlocked = false;
+                updateLockUI();
+            } else {
+                showPasswordPrompt().then(entered => {
+                    if (entered === sysPassword) {
+                        isUnlocked = true;
+                        updateLockUI();
+                        showCustomAlert("System Unlocked.", "Access Granted");
+                    } else if (entered !== null) {
+                        showCustomAlert("Incorrect Password!", "Access Denied");
+                    }
+                });
+            }
+        });
+
+        document.getElementById('settings-btn').addEventListener('click', () => {
+            showSettingsModal().then(async (res) => {
+                if (res) {
+                    let updated = false;
+                    if (res.pass) { sysPassword = res.pass; updated = true; }
+                    if (res.email !== sysRecoveryEmail) { sysRecoveryEmail = res.email; updated = true; }
+
+                    if (updated) {
+                        await setDoc(doc(db, "c2_config", "security"), { password: sysPassword, recoveryEmail: sysRecoveryEmail });
+                        showCustomAlert("Security settings updated successfully.", "Saved");
+                    }
+                }
+            });
+        });
+
+
+        // --- HARDWARE DASHBOARD LOGIC ---
         let espCurrentState = localStorage.getItem('hw_state') || 'OFFLINE';
         let stateLastChangedTime = parseInt(localStorage.getItem('hw_time')) || Date.now();
         let espUptimeSeconds = parseInt(localStorage.getItem('hw_uptime')) || 0;
         let lastPingTime = parseInt(localStorage.getItem('hw_lastping')) || Date.now();
-
         const timerDisplay = document.getElementById('hw-esp-timer');
 
         setInterval(() => {
             const elapsedSincePing = Math.floor((Date.now() - lastPingTime) / 1000);
-
             if (espCurrentState === 'ONLINE') {
-                if (elapsedSincePing > 15) {
-                    changeEspState('OFFLINE', lastPingTime + 15000);
-                    return; 
-                }
-
+                if (elapsedSincePing > 15) { changeEspState('OFFLINE', lastPingTime + 15000); return; }
                 const currentUptime = espUptimeSeconds + elapsedSincePing;
                 const h = Math.floor(currentUptime / 3600);
                 const m = Math.floor((currentUptime % 3600) / 60);
                 const s = currentUptime % 60;
-                
                 timerDisplay.textContent = `Online for: ${h}h ${m}m ${s}s`;
                 timerDisplay.style.color = 'var(--success-green)';
             } else {
@@ -703,7 +742,6 @@
                 const h = Math.floor(secondsOffline / 3600);
                 const m = Math.floor((secondsOffline % 3600) / 60);
                 const s = secondsOffline % 60;
-                
                 timerDisplay.textContent = `Offline for: ${h}h ${m}m ${s}s`;
                 timerDisplay.style.color = 'var(--error-red)';
             }
@@ -713,7 +751,6 @@
             if (espCurrentState !== newState) {
                 espCurrentState = newState;
                 stateLastChangedTime = backdatedTime ? backdatedTime : Date.now();
-                
                 localStorage.setItem('hw_state', espCurrentState);
                 localStorage.setItem('hw_time', stateLastChangedTime);
 
@@ -759,10 +796,8 @@
 
         function handleStatusPing(data) {
             changeEspState('ONLINE');
-            
             espUptimeSeconds = data.uptime_s || 0;
             lastPingTime = Date.now();
-
             localStorage.setItem('hw_uptime', espUptimeSeconds);
             localStorage.setItem('hw_lastping', lastPingTime);
 
@@ -790,17 +825,9 @@
         function decodePacket(packetStr, targetName = "Unknown") {
             let satName = targetName; 
             let meaning = "Raw Hex/Telemetry";
-            
-            if (packetStr.includes("FOSSASAT") || packetStr.startsWith("FOS")) {
-                satName = "FossaSat";
-                meaning = "Fossa Telemetry log detected.";
-            } else if (packetStr.startsWith("NORBY")) {
-                satName = "NORBY";
-                meaning = "NORBY Beacon health status.";
-            } else if (packetStr.includes("Tianqi")) {
-                satName = "Tianqi-39";
-                meaning = "Tianqi IoT payload data.";
-            }
+            if (packetStr.includes("FOSSASAT") || packetStr.startsWith("FOS")) { satName = "FossaSat"; meaning = "Fossa Telemetry log detected."; } 
+            else if (packetStr.startsWith("NORBY")) { satName = "NORBY"; meaning = "NORBY Beacon health status."; } 
+            else if (packetStr.includes("Tianqi")) { satName = "Tianqi-39"; meaning = "Tianqi IoT payload data."; }
             return { satName, meaning };
         }
 
@@ -811,8 +838,7 @@
             
             if (isTest) row.classList.add('test-row');
 
-            let dateStr = "Unknown Date";
-            let timeStr = "";
+            let dateStr = "Unknown Date", timeStr = "";
             if (data.timestamp) {
                 const dateObj = new Date(data.timestamp);
                 dateStr = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -841,40 +867,27 @@
                 const q = query(collection(db, "satellite_packets"), orderBy("timestamp", "asc"));
                 const querySnapshot = await getDocs(q);
                 totalRealPackets = 0;
-                
-                querySnapshot.forEach((doc) => {
-                    renderRow(doc.data(), false);
-                    totalRealPackets++;
-                });
+                querySnapshot.forEach((doc) => { renderRow(doc.data(), false); totalRealPackets++; });
                 document.getElementById('packet-count').textContent = totalRealPackets;
-            } catch (e) {
-                console.error("Error loading historical data:", e);
-            }
+            } catch (e) { console.error("Error loading historical data:", e); }
         }
 
         mqttClient.on('message', async function (topic, message) {
             try {
                 const data = JSON.parse(message.toString());
-
-                if (topic === TOPIC_STATUS) {
-                    handleStatusPing(data);
-                } 
+                if (topic === TOPIC_STATUS) { handleStatusPing(data); } 
                 else if (topic === TOPIC_DATA) {
+                    data.timestamp = Date.now(); 
                     if (data.isTest) {
-                        data.timestamp = Date.now(); 
                         renderRow(data, true);
                     } else {
-                        data.timestamp = Date.now();
                         await addDoc(collection(db, "satellite_packets"), data);
                         renderRow(data, false);
-                        
                         totalRealPackets++;
                         document.getElementById('packet-count').textContent = totalRealPackets;
                     }
                 }
-            } catch (e) {
-                console.error("Message Processing Error: ", e);
-            }
+            } catch (e) { console.error("Message Processing Error: ", e); }
         });
 
         document.getElementById('test-btn').addEventListener('click', () => {
@@ -889,7 +902,7 @@
             mqttClient.publish(TOPIC_DATA, JSON.stringify(testPayload));
         });
 
-        // Initialize managedProfiles with the new parameters
+        // --- C2 MANAGER ROSTER LOGIC ---
         let managedProfiles = [
             {name: "FOSSASAT / Generic", freq: 436.7, bw: 125.0, sf: 11, cr: 8, sync: "0x12", preamble: 8, crc: true, enabled: true},
             {name: "NORBY / CubeSat", freq: 436.7, bw: 125.0, sf: 9, cr: 8, sync: "0x12", preamble: 8, crc: true, enabled: true},
@@ -904,17 +917,12 @@
                     managedProfiles = docSnap.data().profiles;
                     renderManagedList();
                 }
-            } catch (error) {
-                console.log("Could not load cloud roster, using defaults.", error);
-            }
+            } catch (error) { console.log("Could not load cloud roster, using defaults.", error); }
         }
 
         async function saveRosterToCloud() {
-            try {
-                await setDoc(doc(db, "c2_config", "roster"), { profiles: managedProfiles });
-            } catch (error) {
-                console.error("Failed to save to cloud", error);
-            }
+            try { await setDoc(doc(db, "c2_config", "roster"), { profiles: managedProfiles }); } 
+            catch (error) { console.error("Failed to save to cloud", error); }
         }
 
         function renderManagedList() {
@@ -922,20 +930,13 @@
             list.innerHTML = '';
             managedProfiles.forEach((sat, index) => {
                 const li = document.createElement('li');
-                li.style.marginBottom = '10px';
-                li.style.display = 'flex';
-                li.style.justifyContent = 'space-between';
-                li.style.alignItems = 'center';
-                li.style.borderBottom = '1px solid rgba(255, 255, 255, 0.08)';
-                li.style.paddingBottom = '8px';
+                li.style.marginBottom = '10px'; li.style.display = 'flex'; li.style.justifyContent = 'space-between'; li.style.alignItems = 'center'; li.style.borderBottom = '1px solid rgba(255, 255, 255, 0.08)'; li.style.paddingBottom = '8px';
                 
                 const statusTag = sat.enabled ? '' : '<span style="color:var(--error-red); font-size:10px; font-weight:bold;">(PAUSED)</span>';
                 const opacity = sat.enabled ? '1' : '0.55';
-
                 const toggleBtnColor = sat.enabled ? 'var(--pause-grey)' : 'var(--success-green)';
                 const toggleBtnText = sat.enabled ? 'Pause' : 'Enable';
                 
-                // Provide defaults if the cloud data didn't have sync/preamble saved yet
                 const dispSync = sat.sync || "0x12";
                 const dispPre = sat.preamble || 8;
                 const dispCRC = sat.crc !== false ? "ON" : "OFF";
@@ -958,11 +959,8 @@
         window.toggleSat = async function(index) {
             managedProfiles[index].enabled = !managedProfiles[index].enabled;
             const sat = managedProfiles[index];
-            
             mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "toggle", name: sat.name, enabled: sat.enabled }));
-            
-            renderManagedList();
-            await saveRosterToCloud();
+            renderManagedList(); await saveRosterToCloud();
         };
 
         window.editSat = function(index) {
@@ -979,15 +977,13 @@
 
         window.deleteSat = async function(name) {
             if (managedProfiles.length <= 1) {
-                await showCustomAlert("Cannot delete the last satellite! The scanner needs at least one target to function.", "Operation Blocked");
-                return;
+                await showCustomAlert("Cannot delete the last satellite! The scanner needs at least one target to function.", "Operation Blocked"); return;
             }
             const confirmed = await showCustomConfirm(`Are you sure you want to remove "${name}" from the scanning rotation?`, "Confirm Deletion");
             if (confirmed) {
                 mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "delete", name: name }));
                 managedProfiles = managedProfiles.filter(s => s.name !== name);
-                renderManagedList();
-                await saveRosterToCloud();
+                renderManagedList(); await saveRosterToCloud();
             }
         };
 
@@ -997,30 +993,23 @@
             const bw = parseFloat(document.getElementById('new-sat-bw').value);
             const sf = parseInt(document.getElementById('new-sat-sf').value);
             const cr = parseInt(document.getElementById('new-sat-cr').value);
-            
             const syncStr = document.getElementById('new-sat-sync').value.trim();
-            const sync = parseInt(syncStr, 16); // Convert Hex string to integer
+            const sync = parseInt(syncStr, 16);
             const preamble = parseInt(document.getElementById('new-sat-preamble').value);
             const crc = document.getElementById('new-sat-crc').value === "true";
 
             if (!name || isNaN(freq) || isNaN(bw) || isNaN(sf) || isNaN(cr) || isNaN(sync) || isNaN(preamble)) {
-                await showCustomAlert("Please fill out all parameter fields with valid numbers!", "Input Required");
-                return;
+                await showCustomAlert("Please fill out all parameter fields with valid numbers!", "Input Required"); return;
             }
 
             const configPayload = { cmd: "add", name, freq, bw, sf, cr, sync, preamble, crc };
             mqttClient.publish(TOPIC_CONFIG, JSON.stringify(configPayload));
             
             const existingIdx = managedProfiles.findIndex(s => s.name === name);
-            if (existingIdx >= 0) {
-                managedProfiles[existingIdx] = {name, freq, bw, sf, cr, sync: syncStr, preamble, crc, enabled: true};
-            } else {
-                managedProfiles.push({name, freq, bw, sf, cr, sync: syncStr, preamble, crc, enabled: true});
-            }
+            if (existingIdx >= 0) { managedProfiles[existingIdx] = {name, freq, bw, sf, cr, sync: syncStr, preamble, crc, enabled: true}; } 
+            else { managedProfiles.push({name, freq, bw, sf, cr, sync: syncStr, preamble, crc, enabled: true}); }
             
-            renderManagedList();
-            await saveRosterToCloud();
-            
+            renderManagedList(); await saveRosterToCloud();
             await showCustomAlert(`Command beamed to station! Tracker memory updated for ${name}.`, "Transmission Complete");
             document.getElementById('new-sat-name').value = '';
         });
@@ -1032,15 +1021,12 @@
                     const preVal = sat.preamble || 8;
                     const crcVal = sat.crc !== false;
                     mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "add", name: sat.name, freq: sat.freq, bw: sat.bw, sf: sat.sf, cr: sat.cr, sync: syncVal, preamble: preVal, crc: crcVal }));
-                    setTimeout(() => {
-                        mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "toggle", name: sat.name, enabled: sat.enabled }));
-                    }, 500); 
+                    setTimeout(() => { mqttClient.publish(TOPIC_CONFIG, JSON.stringify({ cmd: "toggle", name: sat.name, enabled: sat.enabled })); }, 500); 
                 }, index * 1500);
             });
             await showCustomAlert("Syncing Cloud Memory to ESP32... Please allow several seconds for transmission to complete.", "Sync Started");
         });
 
-        // Initialize display
         renderManagedList();
     </script>
 </body>
