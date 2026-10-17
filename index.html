@@ -820,6 +820,7 @@
             }
 
             const displayFreq = data.frequency ? `<span class="freq-tag">${data.frequency} MHz</span>` : '';
+            const displaySnr = data.snr !== undefined ? `<span style="color:var(--warning-yellow); font-weight:600; font-size: 12px;">SNR: ${data.snr} dB</span><br>` : '';
 
             row.innerHTML = `
                 <td><strong>${dateStr}</strong><br><small style="color:var(--text-muted)">${timeStr}</small></td>
@@ -828,6 +829,7 @@
                 <td style="color:var(--text-muted)">${decoded.meaning}</td>
                 <td>
                     <span style="color:var(--success-green); font-weight:600;">RSSI: ${data.rssi} dBm</span><br>
+                    ${displaySnr}
                     ${displayFreq}
                 </td>
             `;
@@ -879,6 +881,7 @@
             const testPayload = {
                 packet: `FOSSA-TEST-BEACON-VOLT-4.2V-TEMP-${Math.floor(Math.random() * 20 + 10)}C`,
                 rssi: -50 - Math.floor(Math.random() * 20),
+                snr: (Math.random() * 8 - 4).toFixed(1),
                 frequency: 436.7,
                 sat_target: "FOSSASAT-SIM",
                 isTest: true 
